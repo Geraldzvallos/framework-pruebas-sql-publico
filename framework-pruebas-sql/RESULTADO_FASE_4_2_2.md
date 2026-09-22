@@ -59,11 +59,34 @@ El comando de Compose falla apropiadamente indicando las variables faltantes (`C
 La persistencia fue validada exitosamente mediante el proceso de recrear de forma individual los contenedores (ej. la API o Oracle) y notando que los volúmenes `framework_data` y `oracle_data` logran retener el histórico.
 
 ## 8. Respaldo / Restauración SQLite
-Se testeó localmente un backup extrayendo del volumen de docker a través de un comando `tar`:
+**Backup Generado:**
+Se generó el backup copiando el archivo original del volumen principal de Docker (`framework_pruebas_sql_framework_data`) a un archivo temporal local seguro para evitar manipular los datos en vivo.
 ```bash
-docker run --rm -v framework_pruebas_sql_framework_data:/data -v $(pwd):/backup ubuntu tar cvf /backup/framework_backup.tar /data
+docker container create --name dummy -v framework_pruebas_sql_framework_data:/data hello-world
+docker cp dummy:/data/framework_interno.db framework-pruebas-sql/framework_interno_backup.db
+docker rm dummy
 ```
-La prueba de simulación funcionó existosamente.
+
+**Restauración Ejecutada:**
+Se creó un nuevo volumen temporal vacío (`framework_pruebas_sql_temp_restore_vol`) en donde se restauró la base SQLite desde el backup.
+```bash
+docker volume create framework_pruebas_sql_temp_restore_vol
+docker container create --name dummy_restore -v framework_pruebas_sql_temp_restore_vol:/data hello-world
+docker cp framework-pruebas-sql/framework_interno_backup.db dummy_restore:/data/framework_interno.db
+docker rm dummy_restore
+```
+
+**Verificación de tablas y registros:**
+Se montó la base de datos restaurada y se consultaron las tablas `projects` y `test_cases` para asegurar su legibilidad y persistencia de esquema.
+```bash
+python check_restore.py
+# Output:
+# Projects count: 1
+# Cases count: 0
+```
+
+**Resultado Final:**
+La prueba de simulación de respaldo y restauración real a un volumen independiente funcionó de forma completa, conservando los datos iniciales y el esquema sin alterar el volumen de producción original. Los volúmenes temporales de prueba fueron eliminados una vez validada la persistencia.
 
 ## 9. Empaquetado Limpio (ZIP)
 La ruta resultante generada fue `framework-pruebas-sql\dist\Fase_4_2_Limpio.zip`.
