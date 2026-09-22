@@ -79,16 +79,28 @@ def test_zipper_allows_fictitious_examples():
 def test_zipper_blocks_forbidden_files():
     # .env
     assert not run_verify_on_crafted_zip({".env": "test=1"})
+    # .env uppercase
+    assert not run_verify_on_crafted_zip({".ENV": "test=1"})
+    # .env in subfolder
+    assert not run_verify_on_crafted_zip({"folder/.env": "test=1"})
     # .env.production
     assert not run_verify_on_crafted_zip({".env.production": "test=1"})
+    # .env.production uppercase
+    assert not run_verify_on_crafted_zip({".ENV.PRODUCTION": "test=1"})
     # .db
     assert not run_verify_on_crafted_zip({"test.db": "sqlite"})
+    # .DB
+    assert not run_verify_on_crafted_zip({"test.DB": "sqlite"})
     # .sqlite
     assert not run_verify_on_crafted_zip({"test.sqlite": "sqlite"})
     # .log
     assert not run_verify_on_crafted_zip({"test.log": "log"})
+    # .ZIP uppercase
+    assert not run_verify_on_crafted_zip({"test.ZIP": "zip"})
     # venv
     assert not run_verify_on_crafted_zip({"venv/test.txt": "test"})
+    # dist
+    assert not run_verify_on_crafted_zip({"dist/test.txt": "test"})
     # nested zip
     assert not run_verify_on_crafted_zip({"nested.zip": "PK"})
 

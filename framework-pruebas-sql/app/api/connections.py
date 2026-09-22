@@ -30,7 +30,7 @@ def create_connection_profile(profile: schemas.ConnectionProfileCreate, db: Sess
 def get_connection_profiles(
     project_id: Optional[int] = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     """Obtiene la lista de perfiles de conexión filtrados opcionalmente por proyecto."""

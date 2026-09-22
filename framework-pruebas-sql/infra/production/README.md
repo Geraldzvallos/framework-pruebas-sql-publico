@@ -74,12 +74,15 @@ docker compose --env-file .env.production up -d --no-deps api
 ```
 
 ## 10. Rollback de una versión de la aplicación
-Si la nueva versión de la imagen de la API presenta problemas, puedes volver a la versión anterior usando el tag de la imagen previa:
+Si la nueva versión de la imagen de la API presenta problemas o hay corrupción de datos, el procedimiento de rollback consiste en:
+1. Detener los servicios: `docker compose down`
+2. Restaurar los respaldos de los volúmenes obtenidos en el Paso 8.
+3. Desplegar la imagen de contenedor anterior:
 ```bash
 docker tag framework_pruebas_sql:version_anterior framework-pruebas-sql:fase-4-2
-docker compose --env-file .env.production up -d --no-deps api
+docker compose --env-file .env.production up -d
 ```
-*Si hubo cambios en las migraciones, un rollback requerirá `alembic downgrade` de forma manual dentro del contenedor antes de reemplazar la imagen.*
+*Nota: No se soporta `alembic downgrade` de manera oficial. Ante cambios de esquema, el rollback seguro siempre es restaurar el respaldo completo del volumen SQLite e iniciar la imagen previa de la aplicación.*
 
 ## 11. Consulta segura de logs
 Para revisar la actividad o diagnosticar errores sin exponer secretos:

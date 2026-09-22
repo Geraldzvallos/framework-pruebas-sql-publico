@@ -5,9 +5,11 @@ import re
 
 def build_zip(output_path, base_dir):
     exclusions = {
-        ".git", ".pytest_cache", "__pycache__", ".coverage", "htmlcov"
+        ".git", ".pytest_cache", "__pycache__", ".coverage", "htmlcov", "dist"
     }
     ext_exclusions = {".pyc", ".pyo", ".pyd", ".db", ".sqlite", ".sqlite3", ".pem", ".key"}
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for path in base_dir.rglob('*'):
@@ -15,15 +17,15 @@ def build_zip(output_path, base_dir):
                 continue
                 
             parts = path.relative_to(base_dir).parts
-            if any(part in exclusions or part.lower() == "venv" or part.lower().startswith(".venv") or part.lower().endswith("-venv") or part.lower().endswith("_venv") for part in parts):
+            if any(part.lower() in exclusions or part.lower() == "venv" or part.lower().startswith(".venv") or part.lower().endswith("-venv") or part.lower().endswith("_venv") for part in parts):
                 continue
-            if path.suffix in ext_exclusions:
+            if path.suffix.lower() in ext_exclusions:
                 continue
-            if path.name.endswith(".zip") or path.name.endswith(".log"):
+            if path.name.lower().endswith(".zip") or path.name.lower().endswith(".log"):
                 continue
             
             # .env files logic
-            if path.name == ".env" or (path.name.startswith(".env.") and not path.name.endswith(".example")):
+            if path.name.lower() == ".env" or (path.name.lower().startswith(".env.") and not path.name.lower().endswith(".example")):
                 continue
 
             arcname = path.relative_to(base_dir).as_posix()
@@ -39,7 +41,7 @@ def verify_zip(output_path):
             if '\\' in name:
                 print(f"ERROR: Backslash found in path: {name}")
                 sys.exit(1)
-            if name.startswith('/') or name.startswith('C:'):
+            if name.startswith('/') or name.startswith('C:') or name.startswith('c:'):
                 print(f"ERROR: Absolute path found: {name}")
                 sys.exit(1)
             if '..' in name.split('/'):
@@ -47,12 +49,12 @@ def verify_zip(output_path):
                 sys.exit(1)
             
             parts = name.split('/')
-            exclusions = {".git", ".pytest_cache", "__pycache__", ".coverage", "htmlcov"}
-            if any(part in exclusions or part.lower() == "venv" or part.lower().startswith(".venv") or part.lower().endswith("-venv") or part.lower().endswith("_venv") for part in parts):
+            exclusions = {".git", ".pytest_cache", "__pycache__", ".coverage", "htmlcov", "dist"}
+            if any(part.lower() in exclusions or part.lower() == "venv" or part.lower().startswith(".venv") or part.lower().endswith("-venv") or part.lower().endswith("_venv") for part in parts):
                 print(f"ERROR: Excluded directory found in zip: {name}")
                 sys.exit(1)
             
-            filename = parts[-1]
+            filename = parts[-1].lower()
             if filename == ".env" or (filename.startswith(".env.") and not filename.endswith(".example")):
                 print(f"ERROR: Sensitive file found in zip: {name}")
                 sys.exit(1)
@@ -81,7 +83,7 @@ def verify_zip(output_path):
                             if key in lower_line:
                                 val = lower_line.split(key)[-1].strip()
                                 # Allow if empty or obviously fake
-                                if val and not any(fake in val for fake in ["fictici", "example", "my_password", "your_", "secret_pass", "oracle_pwd", "${", "request.password", "getenv", "db_credentials.password", "self.password"]):
+                                if val and not any(fake in val for fake in ["fictici", "example", "my_password", "your_", "secret_pass", "oracle_pwd", "${", "request.password", "getenv", "db_credentials.password", "self.password", "contrasena"]):
                                     print(f"ERROR: Potential real secret found in {name}")
                                     sys.exit(1)
                 except UnicodeDecodeError:
@@ -91,7 +93,19 @@ def verify_zip(output_path):
 
 if __name__ == "__main__":
     base_dir = pathlib.Path(__file__).parent.parent.resolve()
-    output_path = base_dir.parent / "Fase_4_2_Limpio.zip"
+    
+    # Manejar argumento --output
+    output_path = None
+    if "--output" in sys.argv:
+        try:
+            output_idx = sys.argv.index("--output")
+            output_path = pathlib.Path(sys.argv[output_idx + 1]).resolve()
+        except IndexError:
+            print("ERROR: --output requires a path")
+            sys.exit(1)
+    
+    if not output_path:
+        output_path = base_dir / "dist" / "Fase_4_2_Limpio.zip"
     
     if output_path.exists():
         output_path.unlink()

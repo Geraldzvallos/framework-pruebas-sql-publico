@@ -30,8 +30,12 @@ docker compose -f infra/production/compose.yml --env-file infra/production/.env.
 ```
 
 **Rollback:**
-Si surge un error, etiquete y despliegue la imagen anterior:
+Si surge un error, o existen problemas de datos tras la actualización:
+1. Detenga los contenedores temporalmente: `docker compose down`.
+2. Restaure los backups de sus volúmenes (SQLite y Oracle) obtenidos antes de la actualización.
+3. Etiquete y despliegue la imagen anterior:
 ```bash
 docker tag framework_pruebas_sql:version_anterior framework-pruebas-sql:fase-4-2
-docker compose -f infra/production/compose.yml --env-file infra/production/.env.production up -d --no-deps api
+docker compose -f infra/production/compose.yml --env-file infra/production/.env.production up -d
 ```
+*Nota: No utilice `alembic downgrade`. El rollback de base de datos se realiza restaurando los volúmenes físicos respaldados.*

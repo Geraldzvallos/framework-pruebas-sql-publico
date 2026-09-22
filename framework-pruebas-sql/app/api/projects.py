@@ -30,7 +30,7 @@ def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)
 @router.get("/projects/", response_model=list[schemas.ProjectResponse])
 def get_projects(
     skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     """Obtiene la lista de proyectos con paginación estricta."""

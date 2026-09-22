@@ -68,7 +68,7 @@ def add_test_case_to_suite(suite_id: int, test_case_id: int, db: Session = Depen
 def get_all_suites(
     project_id: Optional[int] = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     """Obtiene todas las suites registradas con paginación y filtro de proyecto."""

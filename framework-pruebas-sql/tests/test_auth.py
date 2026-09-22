@@ -51,3 +51,24 @@ def test_healthcheck_always_available():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "message": "El motor del Framework SQL está en línea.", "version": "2.0.0"}
+
+def test_auth_enabled_empty_username(monkeypatch):
+    monkeypatch.setenv("APP_ACCESS_USERNAME", " ")
+    client = TestClient(app)
+    response = client.get("/api/projects/")
+    assert response.status_code == 503
+    assert "admin" not in response.text and "secret" not in response.text
+    
+def test_auth_enabled_empty_password(monkeypatch):
+    monkeypatch.setenv("APP_ACCESS_PASSWORD", "")
+    client = TestClient(app)
+    response = client.get("/api/projects/")
+    assert response.status_code == 503
+    assert "admin" not in response.text and "secret" not in response.text
+
+def test_healthcheck_invalid_config(monkeypatch):
+    monkeypatch.setenv("APP_ACCESS_PASSWORD", "   ")
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 503
+    assert "admin" not in response.text and "secret" not in response.text

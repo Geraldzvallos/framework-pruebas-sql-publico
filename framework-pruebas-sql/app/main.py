@@ -42,6 +42,11 @@ async def basic_auth_middleware(request: Request, call_next):
     if not os.getenv("APP_ACCESS_ENABLED", "").lower() == "true":
         return await call_next(request)
         
+    expected_username = os.getenv("APP_ACCESS_USERNAME", "").strip()
+    expected_password = os.getenv("APP_ACCESS_PASSWORD", "").strip()
+    if not expected_username or not expected_password:
+        return JSONResponse(status_code=503, content={"detail": "Service Unavailable: Incomplete configuration"})
+        
     # Rutas públicas (healthcheck y quizás archivos estáticos si fuera el caso, pero pide proteger /ui/)
     if request.url.path == "/" or request.url.path == "/health":
         return await call_next(request)
@@ -55,9 +60,6 @@ async def basic_auth_middleware(request: Request, call_next):
         username, password = decoded.split(":", 1)
     except Exception:
         return JSONResponse(status_code=401, content={"detail": "Unauthorized"}, headers={"WWW-Authenticate": "Basic"})
-        
-    expected_username = os.getenv("APP_ACCESS_USERNAME", "")
-    expected_password = os.getenv("APP_ACCESS_PASSWORD", "")
     
     is_username_correct = secrets.compare_digest(username, expected_username)
     is_password_correct = secrets.compare_digest(password, expected_password)

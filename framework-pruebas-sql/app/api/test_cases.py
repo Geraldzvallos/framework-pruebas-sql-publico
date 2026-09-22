@@ -36,7 +36,7 @@ def create_test_case(test_case: schemas.TestCaseCreate, db: Session = Depends(ge
 def read_test_cases(
     project_id: Optional[int] = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     """Obtiene la lista de casos de prueba guardados con paginación y filtro de proyecto."""
