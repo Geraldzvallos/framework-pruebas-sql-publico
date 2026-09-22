@@ -33,6 +33,8 @@ services:
     image: container-registry.oracle.com/database/free:latest
     container_name: framework_oracle_prod
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:1521:1521"
     environment:
       - ORACLE_PWD=${ORACLE_PWD}
       - FRAMEWORK_TEST_PASSWORD=${FRAMEWORK_TEST_PASSWORD}
