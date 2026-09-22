@@ -1,0 +1,17 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./framework-pruebas-sql
+    steps:
+    - name: Blocked Deploy Notice
+      run: |
+        echo "DEPLOYMENT BLOCKED: Requiere configuración de servidor, dominio y secretos."
+        echo "Una vez proporcionados, habilitar SSH o el mecanismo correspondiente aquí."
+        exit 1

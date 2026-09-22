@@ -1,0 +1,59 @@
+name: framework_pruebas_sql
+services:
+  api:
+    image: framework-pruebas-sql:fase-4-2
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: framework_api_prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    environment:
+      - FRAMEWORK_DB_URL=sqlite:////data/framework_interno.db
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS must be set}
+      - APP_ACCESS_ENABLED=${APP_ACCESS_ENABLED:-true}
+      - APP_ACCESS_USERNAME=${APP_ACCESS_USERNAME:?APP_ACCESS_USERNAME must be set}
+      - APP_ACCESS_PASSWORD=${APP_ACCESS_PASSWORD:?APP_ACCESS_PASSWORD must be set}
+      - RUN_ORACLE_TESTS=${RUN_ORACLE_TESTS:-0}
+    volumes:
+      - framework_data:/data
+    networks:
+      - framework_net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  oracle_db:
+    image: container-registry.oracle.com/database/free@sha256:f988b0c04c4c386cd306a2a914c0d7a9702d83acc31b064a28ad8eb6278a8fba
+    container_name: framework_oracle_prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1521:1521"
+    environment:
+      - ORACLE_PWD=${ORACLE_PWD:?ORACLE_PWD must be set}
+      - FRAMEWORK_TEST_PASSWORD=${FRAMEWORK_TEST_PASSWORD:?FRAMEWORK_TEST_PASSWORD must be set}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ../oracle/init:/opt/oracle/scripts/startup:ro
+    networks:
+      - framework_net
+    healthcheck:
+      test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  framework_data:
+  oracle_data:
+
+networks:
+  framework_net:
+    driver: bridge

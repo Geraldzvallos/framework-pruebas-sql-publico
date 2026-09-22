@@ -1,0 +1,29 @@
+name: Docs Check
+
+on:
+  push:
+    branches: [ "main", "fase-4-2-despliegue" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./framework-pruebas-sql
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Verify mandatory documents exist
+      run: |
+        test -f README.md
+        test -f infra/production/README.md
+        test -f docs/manual_usuario.md
+        test -f docs/manual_tecnico.md
+        test -f docs/arquitectura.md
+        test -f docs/instalacion_y_despliegue.md
+        
+    - name: Verify no secrets in examples
+      run: |
+        python scripts/build_clean_zip.py
