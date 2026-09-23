@@ -1,0 +1,25 @@
+graph TD
+    subgraph Frontend Client
+        UI[Navegador (HTML/CSS/JS)]
+    end
+
+    subgraph Backend Server (Uvicorn)
+        FastAPI[FastAPI Application]
+        Auth[Basic Auth Middleware]
+        Routers[API Routers]
+        ExecService[Execution Service]
+        Alembic[Alembic Migrations]
+    end
+
+    subgraph Data Stores
+        SQLite[(framework_interno.db)]
+        Oracle[(Oracle Test Database)]
+    end
+
+    UI -- HTTP REST --> Auth
+    Auth --> FastAPI
+    FastAPI --> Routers
+    Routers --> ExecService
+    Routers -- CRUD --> SQLite
+    ExecService -- cx_Oracle --> Oracle
+    Alembic -- schema updates --> SQLite

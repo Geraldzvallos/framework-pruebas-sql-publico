@@ -105,7 +105,7 @@ if __name__ == "__main__":
             sys.exit(1)
     
     if not output_path:
-        output_path = base_dir / "dist" / "Fase_4_2_Limpio.zip"
+        output_path = base_dir / "dist" / "SQL_QA_Framework.zip"
     
     if output_path.exists():
         output_path.unlink()

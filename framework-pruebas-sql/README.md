@@ -73,7 +73,7 @@ No abras `frontend/index.html` mediante `file://`, porque el flujo oficial utili
 pytest -v
 ```
 *Nota: Las pruebas automáticas corren sobre una base de datos SQLite en memoria aislada (`:memory:`) sin alterar `framework_interno.db` ni requerir una conexión Oracle real.*
-El total de pruebas de la suite completa se informa en los resultados de cada fase. Oracle Database Free ya fue validado localmente en la Fase 4.1.1 (con 60 pruebas normales y 11 pruebas Oracle separadas). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
+El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 60 pruebas normales y 11 pruebas Oracle separadas). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
 
 ## 11. Uso del Archivo `.env.example`
 Copia la plantilla de variables de entorno y ajusta los valores locales si es necesario:
@@ -86,7 +86,7 @@ Contenido de muestra:
 
 Los datos del perfil Oracle se registran desde la interfaz. La contraseña se solicita únicamente al probar o ejecutar y no se guarda en `.env` ni en SQLite.
 
-## 12. Funcionalidades Implementadas (Fase 1 y Fase 2)
+## 12. Funcionalidades Implementadas
 - [x] **Gestión de Proyectos (CRUD):** Creación, lectura, actualización y eliminación de proyectos. Prevención de eliminación si existen dependencias.
 - [x] **Perfiles de Conexión (CRUD sin contraseñas):** Configuración de hosts, puertos, usernames y service names. Las contraseñas NO se almacenan en SQLite (ni en texto plano ni cifradas).
 - [x] **Prueba de Conexión:** Endpoint `/connections/{id}/test` para validar credenciales sin guardar la contraseña.
@@ -98,9 +98,9 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 - [x] **Migraciones Alembic:** Control de versiones de esquema de base de datos SQLite con soporte para SQLite batch mode (`render_as_batch=True`).
 - [x] **Aislamiento Total en Pruebas:** Pytest 100% aislado en memoria (`:memory:`), sin modificar `framework_interno.db`.
 
-## 13. Funcionalidades Pendientes (Fases Futuras)
-- [x] Validación Oracle Real (Fase 4): Ejecución comprobada contra una base de datos Oracle XE o similar en un contenedor Docker.
-- [x] Preparación de producción y despliegue (Fase 4.2): variables, almacenamiento persistente, acceso protegido y pruebas sobre la URL publicada (despliegue público en curso).
+## 13. Capacidades de Despliegue
+- [x] Validación Oracle Real: Ejecución comprobada contra una base de datos Oracle XE o similar en un contenedor Docker.
+- [x] Preparación de producción y despliegue: variables, almacenamiento persistente, acceso protegido y pruebas sobre la URL publicada (despliegue público en curso).
 
 ## 14. Advertencia de Seguridad
 > [!CAUTION]
@@ -148,7 +148,7 @@ framework_pruebas_sql/
 ## 18. Estado Real del Despliegue
 Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI) pero el despliegue final (CD) a un proveedor Cloud se encuentra retenido y documentado como pendiente de variables de entorno y DNS definitivos.
 
-## 17. Oracle Database Free para Pruebas Locales (Fase 4.1)
+## 17. Oracle Database Free para Pruebas Locales
 
 Para realizar pruebas DML completas con `ROLLBACK` contra un motor real, el proyecto ahora incluye configuración para Oracle Database Free mediante Docker.
 

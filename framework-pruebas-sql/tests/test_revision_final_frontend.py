@@ -9,12 +9,13 @@ client = TestClient(app)
 
 
 def test_frontend_uses_valid_history_limit_and_safe_error_rendering():
-    javascript = Path("frontend/app.js").read_text(encoding="utf-8")
+    dashboard = Path("frontend/js/modulos/dashboard.js").read_text(encoding="utf-8")
+    api = Path("frontend/js/core/api.js").read_text(encoding="utf-8")
 
-    assert "limit=1000" not in javascript
-    assert "limit=100" in javascript
-    assert "escapeHTML(e.message)" in javascript
-    assert "if (id == 1)" not in javascript
+    assert "limit=1000" not in dashboard
+    assert "limit=100" in dashboard
+    assert "escapeHTML(e.message)" in api
+    assert "if (id == 1)" not in dashboard
 
     assert client.get("/api/history/?limit=100").status_code == 200
     assert client.get("/api/history/?limit=101").status_code == 422

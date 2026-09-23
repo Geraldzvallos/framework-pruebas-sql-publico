@@ -15,7 +15,7 @@ def read_env(filepath):
     return d
 
 env_vars = read_env('.env.oracle')
-test_pwd = env_vars.get('FRAMEWORK_TEST_PASSWORD', 'test')
+test_pwd = env_vars.get('FRAMEWORK_TEST_PASSWORD', os.getenv('FRAMEWORK_TEST_PASSWORD', 'test'))
 
 BASE_URL = "http://127.0.0.1:8000/api"
 
@@ -40,7 +40,9 @@ def do_req(url, method="GET", data=None, auth=None):
 status, out = do_req("/projects/")
 print(f"[AUTH] Sin credenciales: Status {status} (Espera 401)")
 
-auth = ('admin', 'admin')
+auth_user = env_vars.get('APP_ACCESS_USERNAME', os.getenv('APP_ACCESS_USERNAME', 'admin'))
+auth_pwd = env_vars.get('APP_ACCESS_PASSWORD', os.getenv('APP_ACCESS_PASSWORD', 'admin'))
+auth = (auth_user, auth_pwd)
 
 status, projects = do_req("/projects/", auth=auth)
 print(f"[AUTH] Con credenciales: Status {status} (Espera 200)")

@@ -1,0 +1,17 @@
+graph TD
+    subgraph Frontend [Capa de Presentación Vanilla JS]
+        UI[index.html] --> APIJS[core/api.js]
+        UI --> Modulos[modulos/*.js]
+        Modulos --> APIJS
+    end
+
+    subgraph Backend [API REST FastAPI]
+        API[app/main.py] --> Routers[app/api/*.py]
+        Routers --> Services[app/services/*.py]
+        Services --> DataAccess[app/crud.py]
+        DataAccess --> Models[app/models.py]
+    end
+
+    APIJS -- HTTP/JSON --> API
+    Services -- cx_Oracle --> OracleDB[(Oracle Database)]
+    DataAccess -- SQLAlchemy --> SQLite[(SQLite Local)]

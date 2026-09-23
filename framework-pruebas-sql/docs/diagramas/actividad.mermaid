@@ -1,0 +1,22 @@
+stateDiagram-v2
+    [*] --> IniciarEjecucion
+    IniciarEjecucion --> ConectarOracle: Obtener DSN y Credenciales
+    ConectarOracle --> EjecutarSQL: Conexión Exitosa
+    ConectarOracle --> ErrorConexion: Falla Conexión
+
+    EjecutarSQL --> EvaluarResultado: Query Ejecutado
+    EjecutarSQL --> ErrorSQL: Fallo Sintaxis/Permisos
+
+    EvaluarResultado --> ValidarRowCount: Tipo = ROW_COUNT
+    EvaluarResultado --> ValidarExists: Tipo = EXISTS
+
+    ValidarRowCount --> DeterminarEstado
+    ValidarExists --> DeterminarEstado
+
+    DeterminarEstado --> AplicarRollback: Estado (PASS/FAIL)
+    ErrorSQL --> AplicarRollback: Estado (ERROR)
+
+    AplicarRollback --> GuardarHistorial: Rollback Exitoso
+
+    GuardarHistorial --> [*]
+    ErrorConexion --> [*]

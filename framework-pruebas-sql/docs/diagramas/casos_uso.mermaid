@@ -1,0 +1,13 @@
+graph TD
+    User((Usuario QA))
+
+    User --> (Gestionar Proyectos)
+    User --> (Gestionar Conexiones)
+    User --> (Crear Casos de Prueba)
+    User --> (Agrupar Casos en Suites)
+    User --> (Ejecutar Pruebas)
+    User --> (Revisar Historial)
+
+    (Ejecutar Pruebas) .-> (Conectar a Oracle) : include
+    (Ejecutar Pruebas) .-> (Validar ROW_COUNT/EXISTS) : include
+    (Ejecutar Pruebas) .-> (Aplicar ROLLBACK) : include

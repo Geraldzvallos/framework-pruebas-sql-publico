@@ -1,0 +1,48 @@
+erDiagram
+    PROJECTS ||--o{ CONNECTION_PROFILES : has
+    PROJECTS ||--o{ TEST_CASES : has
+    PROJECTS ||--o{ TEST_SUITES : has
+    PROJECTS ||--o{ HISTORY_RECORDS : logs
+    TEST_SUITES ||--o{ SUITE_TEST_CASES : contains
+    TEST_CASES ||--o{ SUITE_TEST_CASES : belongs_to
+
+    PROJECTS {
+        int id PK
+        string name
+        string description
+    }
+    CONNECTION_PROFILES {
+        int id PK
+        int project_id FK
+        string name
+        string host
+        int port
+        string service_name
+        string username
+    }
+    TEST_CASES {
+        int id PK
+        int project_id FK
+        string name
+        string sql_query
+        string validation_type
+        string expected_result
+    }
+    TEST_SUITES {
+        int id PK
+        int project_id FK
+        string name
+    }
+    SUITE_TEST_CASES {
+        int suite_id PK,FK
+        int test_case_id PK,FK
+    }
+    HISTORY_RECORDS {
+        int id PK
+        int project_id FK
+        string type
+        int reference_id
+        string status
+        int duration_ms
+        boolean rollback_executed
+    }

@@ -1,5 +1,5 @@
 import { estado } from '../core/estado.js';
-import { fetchAPI, handleAPIError } from '../../app.js';
+import { fetchAPI, handleAPIError } from '../core/api.js';
 import { escapeHTML, abrirModalGeneral, modalGeneralAction, modalGeneralId } from '../core/utilidades.js';
 
 let abrirEjecucionFn = null;
@@ -15,7 +15,7 @@ export function formCaso(c = null) {
         <div class="mb-3"><label class="form-label">Sentencia SQL</label><textarea class="form-control font-monospace text-primary" id="f-caso-sql" rows="3" required>${escapeHTML(c?.sql_query||'')}</textarea></div>
         <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label">Tipo Validación</label>
-                <select class="form-select" id="f-caso-val" required onchange="window.actualizarPlaceholderCaso()">
+                <select class="form-select" id="f-caso-val" required>
                     <option value="ROW_COUNT" ${c?.validation_type==='ROW_COUNT'?'selected':''}>ROW_COUNT</option>
                     <option value="EXISTS" ${c?.validation_type==='EXISTS'?'selected':''}>EXISTS</option>
                 </select>
@@ -24,11 +24,15 @@ export function formCaso(c = null) {
         </div>
     `;
     abrirModalGeneral(c ? "Editar Caso" : "Nuevo Caso", html, c ? "CASE_EDIT" : "CASE_NEW", c?.id);
-    window.actualizarPlaceholderCaso = function() {
-        const v = document.getElementById("f-caso-val").value;
-        document.getElementById("f-caso-exp").placeholder = v === 'EXISTS' ? 'true o false' : 'Ej: 1';
+
+    const selectVal = document.getElementById("f-caso-val");
+    const inputExp = document.getElementById("f-caso-exp");
+
+    const updatePlaceholder = () => {
+        inputExp.placeholder = selectVal.value === 'EXISTS' ? 'true o false' : 'Ej: 1';
     };
-    window.actualizarPlaceholderCaso();
+    selectVal.addEventListener('change', updatePlaceholder);
+    updatePlaceholder();
 }
 
 export async function saveCaso() {

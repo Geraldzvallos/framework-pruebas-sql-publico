@@ -1,0 +1,45 @@
+classDiagram
+    class Project {
+        +Integer id
+        +String name
+        +String description
+    }
+    class ConnectionProfile {
+        +Integer id
+        +Integer project_id
+        +String name
+        +String host
+        +Integer port
+        +String service_name
+        +String username
+    }
+    class TestCase {
+        +Integer id
+        +Integer project_id
+        +String name
+        +String description
+        +String sql_query
+        +String validation_type
+        +String expected_result
+    }
+    class TestSuite {
+        +Integer id
+        +Integer project_id
+        +String name
+        +String description
+    }
+    class HistoryRecord {
+        +Integer id
+        +Integer project_id
+        +String type
+        +Integer reference_id
+        +String status
+        +Integer duration_ms
+        +Boolean rollback_executed
+    }
+
+    Project "1" -- "*" ConnectionProfile : contains
+    Project "1" -- "*" TestCase : contains
+    Project "1" -- "*" TestSuite : contains
+    Project "1" -- "*" HistoryRecord : logs
+    TestSuite "*" -- "*" TestCase : includes

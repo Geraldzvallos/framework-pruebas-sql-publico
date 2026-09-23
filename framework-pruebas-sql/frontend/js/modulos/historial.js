@@ -1,5 +1,5 @@
 import { estado } from '../core/estado.js';
-import { fetchAPI, handleAPIError } from '../../app.js';
+import { fetchAPI, handleAPIError } from '../core/api.js';
 import { escapeHTML } from '../core/utilidades.js';
 
 export async function cargarHistorial() {
