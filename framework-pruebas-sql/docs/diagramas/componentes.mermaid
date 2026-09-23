@@ -5,7 +5,7 @@ graph TD
 
     subgraph Backend Server (Uvicorn)
         FastAPI[FastAPI Application]
-        Auth[Basic Auth Middleware]
+        Auth[Cookie Auth Middleware]
         Routers[API Routers]
         ExecService[Execution Service]
         Alembic[Alembic Migrations]

@@ -21,6 +21,7 @@
    API_PORT=8000
    FRAMEWORK_DB_URL=sqlite:///./framework_interno.db
    APP_ACCESS_ENABLED=false
+   APP_SESSION_SECRET=default_insecure_secret
    RUN_ORACLE_TESTS=0
    ```
 

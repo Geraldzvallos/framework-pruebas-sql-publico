@@ -6,10 +6,13 @@ load_dotenv()
 
 import secrets
 import base64
+import hmac
+import hashlib
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from app.core.database import engine, Base, SessionLocal
 from app.models import project, connection, test_case, suite, history
 from app.api import projects, connections, test_cases, suites, executions, history as api_history
@@ -36,38 +39,96 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def create_session_token():
+    secret = os.getenv("APP_SESSION_SECRET", "default_insecure_secret").encode()
+    token_data = b"auth_valid"
+    signature = hmac.new(secret, token_data, hashlib.sha256).hexdigest()
+    return f"auth_valid.{signature}"
+
+def verify_session_token(token: str):
+    if not token or not token.startswith("auth_valid."):
+        return False
+    secret = os.getenv("APP_SESSION_SECRET", "default_insecure_secret").encode()
+    expected_signature = hmac.new(secret, b"auth_valid", hashlib.sha256).hexdigest()
+    try:
+        _, signature = token.split(".", 1)
+        return secrets.compare_digest(signature, expected_signature)
+    except ValueError:
+        return False
+
 @app.middleware("http")
-async def basic_auth_middleware(request: Request, call_next):
+async def cookie_auth_middleware(request: Request, call_next):
     # Solo aplicar protección si está habilitada en entorno
     if not os.getenv("APP_ACCESS_ENABLED", "").lower() == "true":
         return await call_next(request)
-        
+
     expected_username = os.getenv("APP_ACCESS_USERNAME", "").strip()
     expected_password = os.getenv("APP_ACCESS_PASSWORD", "").strip()
     if not expected_username or not expected_password:
         return JSONResponse(status_code=503, content={"detail": "Service Unavailable: Incomplete configuration"})
-        
-    # Rutas públicas (healthcheck y quizás archivos estáticos si fuera el caso, pero pide proteger /ui/)
-    if request.url.path == "/" or request.url.path == "/health":
+
+    path = request.url.path
+
+    # Rutas públicas
+    if path in ["/", "/health", "/login", "/api/login"]:
         return await call_next(request)
-        
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Basic "):
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized"}, headers={"WWW-Authenticate": "Basic"})
-        
-    try:
-        decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
-        username, password = decoded.split(":", 1)
-    except Exception:
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized"}, headers={"WWW-Authenticate": "Basic"})
-    
-    is_username_correct = secrets.compare_digest(username, expected_username)
-    is_password_correct = secrets.compare_digest(password, expected_password)
-    
-    if not (is_username_correct and is_password_correct):
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized"}, headers={"WWW-Authenticate": "Basic"})
-        
+
+    # Rutas de frontend de assets (css, js, imágenes) permitidas sin auth para cargar el login
+    if path.startswith("/ui/css/") or path.startswith("/ui/js/"):
+        return await call_next(request)
+
+    session_token = request.cookies.get("session_token")
+    if not verify_session_token(session_token):
+        if path.startswith("/api/"):
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        else:
+            return RedirectResponse(url="/login", status_code=303)
+
     return await call_next(request)
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/login", tags=["Autenticación"])
+def login(creds: LoginRequest):
+    expected_username = os.getenv("APP_ACCESS_USERNAME", "").strip()
+    expected_password = os.getenv("APP_ACCESS_PASSWORD", "").strip()
+
+    if not secrets.compare_digest(creds.username, expected_username) or \
+       not secrets.compare_digest(creds.password, expected_password):
+        return JSONResponse(status_code=401, content={"detail": "Credenciales inválidas"})
+
+    token = create_session_token()
+    response = JSONResponse(content={"detail": "Login exitoso"})
+    secure_cookie = os.getenv("ENVIRONMENT", "production").lower() == "production"
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        secure=secure_cookie,
+        samesite="lax",
+        max_age=86400
+    )
+    return response
+
+@app.post("/api/logout", tags=["Autenticación"])
+def logout():
+    response = JSONResponse(content={"detail": "Logout exitoso"})
+    response.delete_cookie("session_token")
+    return response
+
+@app.get("/login", include_in_schema=False)
+def get_login_page():
+    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    login_html = os.path.join(frontend_path, "login.html")
+    if os.path.exists(login_html):
+        return FileResponse(login_html)
+    return JSONResponse(status_code=404, content={"detail": "login.html not found"})
+
+@app.get("/health", tags=["Salud"])
+def health_check():
+    return {"status": "ok", "message": "El motor del Framework SQL está en línea.", "version": "2.0.0"}
 
 # Registro de routers de la API v2
 app.include_router(projects.router, prefix="/api", tags=["Proyectos"])
