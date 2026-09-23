@@ -18,16 +18,16 @@ El **Framework de Pruebas de Base de Datos SQL** es un entorno diseñado para ev
 
 | Requisito | Módulo | Endpoint/Función | Prueba | Estado |
 |---|---|---|---|---|
-| Autenticación Global | Seguridad | Middleware (FastAPI) | `tests/test_auth.py` | Implementado |
-| CRUD Proyectos | Proyectos | `/projects/` (GET/POST/PUT/DELETE) | `tests/test_projects.py` | Implementado |
-| CRUD Conexiones | Conexiones | `/connections/` (GET/POST/PUT/DELETE) | `tests/test_connections.py` | Implementado |
-| Probar Conexión | Conexiones | `/connections/{id}/test` (POST) | `tests/test_engine.py` | Implementado |
-| CRUD Casos | Casos | `/test-cases/` (GET/POST/PUT/DELETE) | `tests/test_cases.py` | Implementado |
-| CRUD Suites | Suites | `/suites/` (GET/POST/PUT/DELETE) | `tests/test_suites.py` | Implementado |
-| Ejecutar Caso DML | Motor SQL | `/execute/test-case/{id}` (POST) | `tests/test_engine.py` | Implementado |
-| Ejecutar Suite | Motor SQL | `/execute/suite/{id}` (POST) | `tests/test_engine.py` | Implementado |
-| Rollback Obligatorio | Motor SQL | `app/engine/oracle.py` | `tests/test_engine.py` | Implementado |
-| Registro Historial | Historial | `/history/` (GET) | `tests/test_history.py` | Implementado |
+| Autenticación Global | Seguridad (`api.js`) | Middleware (FastAPI) | `tests/test_auth.py` | Implementado |
+| CRUD Proyectos | Proyectos (`proyectos.js`) | `/api/projects/` | `tests/test_core_models.py` | Implementado |
+| CRUD Conexiones | Conexiones (`conexiones.js`) | `/api/connections/` | `tests/test_core_models.py` | Implementado |
+| Probar Conexión | Conexiones (`conexiones.js`) | `/api/connections/{id}/test` | `tests/test_engine.py` | Implementado |
+| CRUD Casos | Casos (`casos.js`) | `/api/test-cases/` | `tests/test_core_models.py` | Implementado |
+| CRUD Suites | Suites (`suites.js`) | `/api/suites/` | `tests/test_core_models.py` | Implementado |
+| Ejecutar Caso DML | Motor SQL (`ejecutor.js`) | `/api/execute/test-case/{id}` | `tests/test_execution_engine.py` | Implementado |
+| Ejecutar Suite | Motor SQL (`ejecutor.js`) | `/api/execute/suite/{id}` | `tests/test_execution_engine.py` | Implementado |
+| Rollback Obligatorio | Motor SQL (`ejecutor.js`) | `app/engine/executor.py` | `tests/test_execution_engine.py` | Implementado |
+| Registro Historial | Historial (`historial.js`) | `/api/history/` | `tests/test_history_pagination.py` | Implementado |
 
 ## 5. Arquitectura Lógica y Física
 - **Frontend**: Single Page Application nativa (HTML, CSS, JS Modular).

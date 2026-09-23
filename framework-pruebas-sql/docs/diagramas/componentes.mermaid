@@ -12,8 +12,8 @@ graph TD
     end
 
     subgraph Data Stores
-        SQLite[(framework_interno.db)]
-        Oracle[(Oracle Test Database)]
+        SQLite[(Volumen: framework_data)]
+        Oracle[(Contenedor: oracle_db)]
     end
 
     UI -- HTTP REST --> Auth
@@ -21,5 +21,5 @@ graph TD
     FastAPI --> Routers
     Routers --> ExecService
     Routers -- CRUD --> SQLite
-    ExecService -- cx_Oracle --> Oracle
+    ExecService -- oracledb --> Oracle
     Alembic -- schema updates --> SQLite

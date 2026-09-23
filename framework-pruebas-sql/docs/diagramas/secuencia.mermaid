@@ -14,8 +14,12 @@ sequenceDiagram
     Service->>Oracle: Ejecutar SQL Query
     Oracle-->>Service: Resultado (Rows affected / Cursor)
     Service->>Service: Evaluar Validación (ROW_COUNT / EXISTS)
-    Service->>Oracle: ROLLBACK
-    Oracle-->>Service: Rollback Completo
+    alt DML (INSERT/UPDATE/DELETE) o Error
+        Service->>Oracle: ROLLBACK
+        Oracle-->>Service: Rollback Completo
+    else SELECT Exitoso
+        Service->>Oracle: Omitir Rollback
+    end
     deactivate Oracle
     Service->>API: Retornar HistoryRecord (PASS/FAIL)
     API-->>UI: 200 OK (JSON)

@@ -13,10 +13,14 @@ stateDiagram-v2
     ValidarRowCount --> DeterminarEstado
     ValidarExists --> DeterminarEstado
 
-    DeterminarEstado --> AplicarRollback: Estado (PASS/FAIL)
+    DeterminarEstado --> DeterminarRollback: Estado (PASS/FAIL)
     ErrorSQL --> AplicarRollback: Estado (ERROR)
 
-    AplicarRollback --> GuardarHistorial: Rollback Exitoso
+    DeterminarRollback --> AplicarRollback: DML (INSERT/UPDATE/DELETE)
+    DeterminarRollback --> OmitirRollback: SELECT
+
+    AplicarRollback --> GuardarHistorial: Rollback Exitoso/Fallido
+    OmitirRollback --> GuardarHistorial
 
     GuardarHistorial --> [*]
     ErrorConexion --> [*]

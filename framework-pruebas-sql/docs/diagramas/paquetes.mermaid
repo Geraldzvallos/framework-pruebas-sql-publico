@@ -8,10 +8,10 @@ graph TD
     subgraph Backend [API REST FastAPI]
         API[app/main.py] --> Routers[app/api/*.py]
         Routers --> Services[app/services/*.py]
-        Services --> DataAccess[app/crud.py]
-        DataAccess --> Models[app/models.py]
+        Services --> Models[app/models/*.py]
+        Routers --> Models
     end
 
     APIJS -- HTTP/JSON --> API
-    Services -- cx_Oracle --> OracleDB[(Oracle Database)]
-    DataAccess -- SQLAlchemy --> SQLite[(SQLite Local)]
+    Services -- oracledb --> OracleDB[(Oracle Database)]
+    Models -- SQLAlchemy --> SQLite[(SQLite Local)]

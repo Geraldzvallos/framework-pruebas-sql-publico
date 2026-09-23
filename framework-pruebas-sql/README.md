@@ -17,7 +17,7 @@ El objetivo del sistema es permitir definir, ejecutar, validar y registrar prueb
 
 ## 4. Arquitectura Actual
 El sistema sigue una arquitectura modular y desacoplada por capas:
-- **Frontend**: Interfaz web completa e integrada en `/ui/`. Incluye paneles de proyectos, conexiones, casos de prueba, ejecución de suites e historial con soporte móvil.
+- **Frontend**: Interfaz web modular e integrada en `/ui/`. Incluye paneles de proyectos, conexiones, casos de prueba, ejecución de suites e historial con soporte móvil. Todos los endpoints funcionales comienzan con `/api`.
 - **API (Controladores / Routers)**: Endpoints REST v2 (`/projects`, `/connections`, `/test-cases`, `/suites`, `/history`, `/execute`).
 - **Core & Persistencia**: Gestión de sesión y contexto de base de datos SQLite interna (`framework_interno.db`) con soporte de claves foráneas `PRAGMA foreign_keys = ON;` y migraciones con **Alembic**.
 - **Services (Capa de Servicios Centralizada)**:
@@ -55,7 +55,7 @@ alembic upgrade head
 
 ## 8. Ejecución del Backend
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload
 ```
 La documentación interactiva estará disponible en: `http://127.0.0.1:8000/docs`
 
@@ -141,14 +141,16 @@ framework_pruebas_sql/
 ## 17. Documentación y Manuales
 
 - [Referencia SRS y Arquitectura (SAD)](docs/referencia-srs-sad.md)
-- [Arquitectura Actual](docs/arquitectura-actual.md)
+- [Arquitectura](docs/arquitectura.md)
 - [Manual Técnico](docs/manual-tecnico.md)
 - [Manual de Usuario](docs/manual-usuario.md)
+- [Instalación Local](docs/instalacion-local.md)
+- [Despliegue](docs/despliegue.md)
 
 ## 18. Estado Real del Despliegue
 Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI) pero el despliegue final (CD) a un proveedor Cloud se encuentra retenido y documentado como pendiente de variables de entorno y DNS definitivos.
 
-## 17. Oracle Database Free para Pruebas Locales
+## 19. Oracle Database Free para Pruebas Locales
 
 Para realizar pruebas DML completas con `ROLLBACK` contra un motor real, el proyecto ahora incluye configuración para Oracle Database Free mediante Docker.
 

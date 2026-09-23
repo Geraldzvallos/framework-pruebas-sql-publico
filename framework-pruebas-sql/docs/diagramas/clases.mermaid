@@ -28,18 +28,28 @@ classDiagram
         +String name
         +String description
     }
-    class HistoryRecord {
+    class ExecutionHistory {
         +Integer id
         +Integer project_id
-        +String type
-        +Integer reference_id
+        +Integer test_case_id
+        +Integer suite_id
+        +Integer connection_profile_id
         +String status
-        +Integer duration_ms
-        +Boolean rollback_executed
+        +DateTime executed_at
+        +Float duration_ms
+        +String statement_type
+        +String executed_sql
+        +String validation_type
+        +String expected_result
+        +String actual_result
+        +Integer rowcount
+        +Boolean rollback_applied
+        +String rollback_error
+        +String error_message
     }
 
     Project "1" -- "*" ConnectionProfile : contains
     Project "1" -- "*" TestCase : contains
     Project "1" -- "*" TestSuite : contains
-    Project "1" -- "*" HistoryRecord : logs
+    Project "1" -- "*" ExecutionHistory : logs
     TestSuite "*" -- "*" TestCase : includes

@@ -1,17 +1,16 @@
 graph TD
     subgraph Localhost / Docker Engine
-        subgraph Contenedor Aplicacion
+        subgraph Contenedores Principales
             App[FastAPI QA Framework]
             UI[Archivos Estáticos UI]
-            DB_Local[(SQLite Local)]
+            DB_Local[(Volumen: framework_data)]
         end
-    end
-
-    subgraph Red / Cloud
-        Oracle[(Oracle Database Target)]
+        subgraph Base de Datos Target
+            Oracle[(Contenedor: oracle_db)]
+        end
     end
 
     Client[Navegador Web] -- HTTP :8000 --> App
     App -- Lee --> UI
     App -- Lee/Escribe --> DB_Local
-    App -- cx_Oracle TCP :1521 --> Oracle
+    App -- oracledb TCP :1521 --> Oracle
