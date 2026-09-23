@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ "main", "fase-4-2-despliegue" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -30,8 +30,7 @@ jobs:
       run: python -m pip check
       
     - name: Check JS syntax
-      run: node --check frontend/app.js
-      
+      run: find frontend -name "*.js" -exec node --check {} \;
     - name: Prepare temporary SQLite DB
       run: |
         export FRAMEWORK_DB_URL=sqlite:///./temp_test_db.sqlite
@@ -44,4 +43,4 @@ jobs:
       run: pytest -q -m "not oracle_integration"
       
     - name: Test Docker build
-      run: docker build -t framework-pruebas-sql:fase-4-2 .
+      run: docker build -t sql-qa-framework:latest .

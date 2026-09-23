@@ -1,7 +1,7 @@
 name: framework_pruebas_sql
 services:
   api:
-    image: framework-pruebas-sql:fase-4-2
+    image: sql-qa-framework:latest
     build:
       context: ../../
       dockerfile: Dockerfile

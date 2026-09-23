@@ -1,0 +1,24 @@
+graph TD
+    user((Usuario QA))
+
+    gestionarProyectos([Gestionar Proyectos])
+    gestionarConexiones([Gestionar Conexiones])
+    crearCasos([Crear Casos de Prueba])
+    agruparSuites([Agrupar Casos en Suites])
+    ejecutarPruebas([Ejecutar Pruebas])
+    revisarHistorial([Revisar Historial])
+
+    user --> gestionarProyectos
+    user --> gestionarConexiones
+    user --> crearCasos
+    user --> agruparSuites
+    user --> ejecutarPruebas
+    user --> revisarHistorial
+
+    conectarOracle([Conectar a Oracle])
+    validarRowCount([Validar ROW_COUNT/EXISTS])
+    aplicarRollback([Aplicar ROLLBACK a DML])
+
+    ejecutarPruebas .-> conectarOracle : include
+    ejecutarPruebas .-> validarRowCount : include
+    ejecutarPruebas .-> aplicarRollback : include

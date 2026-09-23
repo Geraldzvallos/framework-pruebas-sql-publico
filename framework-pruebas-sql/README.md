@@ -17,8 +17,8 @@ El objetivo del sistema es permitir definir, ejecutar, validar y registrar prueb
 
 ## 4. Arquitectura Actual
 El sistema sigue una arquitectura modular y desacoplada por capas:
-- **Frontend**: Interfaz web completa e integrada en `/ui/`. Incluye paneles de proyectos, conexiones, casos de prueba, ejecución de suites e historial con soporte móvil.
-- **API (Controladores / Routers)**: Endpoints REST v2 (`/projects`, `/connections`, `/test-cases`, `/suites`, `/history`, `/execute`).
+- **Frontend**: Interfaz web modular e integrada en `/ui/`. Incluye paneles de proyectos, conexiones, casos de prueba, ejecución de suites e historial con soporte móvil. Todos los endpoints funcionales comienzan con `/api`.
+- **API (Controladores / Routers)**: Endpoints REST v2 (`/api/projects`, `/api/connections`, `/api/test-cases`, `/api/suites`, `/api/history`, `/api/execute`).
 - **Core & Persistencia**: Gestión de sesión y contexto de base de datos SQLite interna (`framework_interno.db`) con soporte de claves foráneas `PRAGMA foreign_keys = ON;` y migraciones con **Alembic**.
 - **Services (Capa de Servicios Centralizada)**:
   - `ExecutionService`: Orquestación centralizada de ejecuciones (individuales y por suite), selección de estrategia de validación (`ROW_COUNT` y `EXISTS`), formateo seguro de evidencias y registro en historial.
@@ -55,7 +55,7 @@ alembic upgrade head
 
 ## 8. Ejecución del Backend
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload
 ```
 La documentación interactiva estará disponible en: `http://127.0.0.1:8000/docs`
 
@@ -73,7 +73,7 @@ No abras `frontend/index.html` mediante `file://`, porque el flujo oficial utili
 pytest -v
 ```
 *Nota: Las pruebas automáticas corren sobre una base de datos SQLite en memoria aislada (`:memory:`) sin alterar `framework_interno.db` ni requerir una conexión Oracle real.*
-El total de pruebas de la suite completa se informa en los resultados de cada fase. Oracle Database Free ya fue validado localmente en la Fase 4.1.1 (con 60 pruebas normales y 11 pruebas Oracle separadas). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
+El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
 
 ## 11. Uso del Archivo `.env.example`
 Copia la plantilla de variables de entorno y ajusta los valores locales si es necesario:
@@ -86,21 +86,21 @@ Contenido de muestra:
 
 Los datos del perfil Oracle se registran desde la interfaz. La contraseña se solicita únicamente al probar o ejecutar y no se guarda en `.env` ni en SQLite.
 
-## 12. Funcionalidades Implementadas (Fase 1 y Fase 2)
+## 12. Funcionalidades Implementadas
 - [x] **Gestión de Proyectos (CRUD):** Creación, lectura, actualización y eliminación de proyectos. Prevención de eliminación si existen dependencias.
 - [x] **Perfiles de Conexión (CRUD sin contraseñas):** Configuración de hosts, puertos, usernames y service names. Las contraseñas NO se almacenan en SQLite (ni en texto plano ni cifradas).
-- [x] **Prueba de Conexión:** Endpoint `/connections/{id}/test` para validar credenciales sin guardar la contraseña.
+- [x] **Prueba de Conexión:** Endpoint `/api/connections/{id}/test` para validar credenciales sin guardar la contraseña.
 - [x] **Casos de Prueba con validation_type:** Soporte para estancias de validación por `ROW_COUNT` (número de filas afectadas) y `EXISTS` (verificación boolean true/false).
 - [x] **Suites de Pruebas:** Agrupación de casos pertenecientes al mismo proyecto con validaciones de integridad (mismo proyecto, sin duplicados).
-- [x] **Motor de Ejecución Centalizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
+- [x] **Motor de Ejecución Centralizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
 - [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo `project_id`, `suite_id`, `connection_profile_id`, `statement_type`, `validation_type`, `expected_result`, `actual_result`, `rowcount`, `rollback_applied` y `error_message`.
 - [x] **Consultas con Filtros y Paginación:** Búsqueda en historial por `project_id`, `test_case_id`, `suite_id` y `status`.
 - [x] **Migraciones Alembic:** Control de versiones de esquema de base de datos SQLite con soporte para SQLite batch mode (`render_as_batch=True`).
 - [x] **Aislamiento Total en Pruebas:** Pytest 100% aislado en memoria (`:memory:`), sin modificar `framework_interno.db`.
 
-## 13. Funcionalidades Pendientes (Fases Futuras)
-- [x] Validación Oracle Real (Fase 4): Ejecución comprobada contra una base de datos Oracle XE o similar en un contenedor Docker.
-- [x] Preparación de producción y despliegue (Fase 4.2): variables, almacenamiento persistente, acceso protegido y pruebas sobre la URL publicada (despliegue público en curso).
+## 13. Capacidades de Despliegue
+- [x] Validación Oracle Real: Ejecución comprobada contra una base de datos Oracle XE o similar en un contenedor Docker.
+- [x] Preparación de producción y despliegue: variables, almacenamiento persistente, acceso protegido (despliegue en la nube sigue pendiente).
 
 ## 14. Advertencia de Seguridad
 > [!CAUTION]
@@ -118,27 +118,39 @@ El flujo de ejecución es:
 6. Si el `rollback` falla, la prueba es marcada automáticamente como `FAIL/ERROR` (`success = False`).
 7. **Nunca se ejecuta `COMMIT`.**
 
-## 16. Estructura del Proyecto
+## 16. Estructura de Carpetas
+
 ```text
 framework_pruebas_sql/
 ├── alembic/             # Control de versiones de esquemas de BD (Alembic)
-├── app/
-│   ├── api/             # Endpoints y controladores REST (FastAPI)
-│   ├── core/            # Base de datos y configuración SQLite
-│   ├── engine/          # Motor SQL (Executor) y Estrategias de Validación
-│   ├── models/          # Modelos ORM SQLAlchemy y Esquemas Pydantic
-│   └── services/        # Capa de Servicios (Orquestador de ejecuciones)
-├── frontend/            # Interfaz de usuario (HTML, CSS, JS)
-├── infra/               # Infraestructura y contenedores Docker (Oracle local)
+├── app/                 # Backend REST API (FastAPI)
+├── docs/                # Documentación técnica y manuales
+├── frontend/
+│   ├── index.html       # Estructura principal SPA
+│   ├── app.js           # Coordinador principal
+│   ├── css/             # Hojas de estilo
+│   └── js/              # Javascript Modular
+│       ├── core/        # Utilidades, estado y cliente HTTP
+│       └── modulos/     # Funciones específicas de cada sección
+├── infra/               # Infraestructura Docker y Compose
 ├── tests/               # Pruebas automáticas (Pytest + Mocks + TestClient)
-├── alembic.ini          # Configuración de Alembic
 ├── framework_interno.db # Base de datos SQLite interna (desarrollo)
-├── pytest.ini           # Configuración de Pytest
-├── README.md            # Documentación del proyecto
 └── requirements.txt     # Lista de dependencias de Python
 ```
 
-## 17. Oracle Database Free para Pruebas Locales (Fase 4.1)
+## 17. Documentación y Manuales
+
+- [Referencia SRS y Arquitectura (SAD)](docs/referencia-srs-sad.md)
+- [Arquitectura](docs/arquitectura.md)
+- [Manual Técnico](docs/manual-tecnico.md)
+- [Manual de Usuario](docs/manual-usuario.md)
+- [Instalación Local](docs/instalacion-local.md)
+- [Despliegue](docs/despliegue.md)
+
+## 18. Estado Real del Despliegue
+Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI). El despliegue a un proveedor Cloud sigue pendiente de variables de entorno y DNS definitivos.
+
+## 19. Oracle Database Free para Pruebas Locales
 
 Para realizar pruebas DML completas con `ROLLBACK` contra un motor real, el proyecto ahora incluye configuración para Oracle Database Free mediante Docker.
 

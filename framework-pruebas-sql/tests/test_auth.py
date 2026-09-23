@@ -18,11 +18,13 @@ def test_auth_disabled(monkeypatch):
     assert response.status_code == 200
     
 def test_auth_enabled_no_credentials():
+    # Prueba automática estricta que impide que la API retorne 200 sin credenciales
     client = TestClient(app)
     endpoints = ["/ui/", "/api/projects/", "/docs", "/openapi.json"]
     for ep in endpoints:
         response = client.get(ep)
         assert response.status_code == 401
+        assert response.headers.get("WWW-Authenticate") == "Basic"
 
 def test_auth_enabled_valid_credentials():
     client = TestClient(app)

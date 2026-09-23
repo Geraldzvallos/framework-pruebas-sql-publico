@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User as Usuario QA
+    participant UI as Frontend (ejecutor.js)
+    participant API as FastAPI (executions.py)
+    participant Service as ExecutionService
+    participant Oracle as Base de Datos Oracle
+
+    User->>UI: Clic en Ejecutar (Ingresa Password)
+    UI->>API: POST /api/execute/test-case/{id}
+    API->>Service: run_single_test_case_execution(id, profile, password)
+    Service->>Oracle: connect(user, password, dsn)
+    activate Oracle
+    Oracle-->>Service: Conexión Establecida
+    Service->>Oracle: Ejecutar SQL Query
+    Oracle-->>Service: Resultado (Rows affected / Cursor)
+    Service->>Service: Evaluar Validación (ROW_COUNT / EXISTS)
+    alt DML (INSERT/UPDATE/DELETE) o Error
+        Service->>Oracle: ROLLBACK
+        Oracle-->>Service: Rollback Completo
+    else SELECT Exitoso
+        Service->>Oracle: Omitir Rollback
+    end
+    deactivate Oracle
+    Service->>API: Retornar ExecutionHistory (PASS/FAIL)
+    API-->>UI: 200 OK (JSON)
+    UI->>User: Mostrar Modal de Resultados

@@ -1,0 +1,18 @@
+body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.sidebar { height: 100vh; position: sticky; top: 0; background-color: #1a1d20; color: #fff; padding-top: 20px; z-index: 1040; }
+.sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; transition: 0.3s; cursor: pointer; }
+.sidebar a:hover, .sidebar a.active { color: #fff; background-color: #0d6efd; border-left: 4px solid #fff; }
+.main-content { padding: 2rem; min-height: 100vh; }
+.card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); margin-bottom: 20px; }
+.hidden { display: none !important; }
+.text-truncate-custom { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+
+/* Mobile Navbar adjustments */
+@media (max-width: 767.98px) {
+    .sidebar { display: none; }
+    .mobile-header { display: flex; justify-content: space-between; align-items: center; background-color: #1a1d20; padding: 10px 20px; color: white; }
+    .main-content { padding: 1rem; }
+}
+@media (min-width: 768px) {
+    .mobile-header { display: none; }
+}
