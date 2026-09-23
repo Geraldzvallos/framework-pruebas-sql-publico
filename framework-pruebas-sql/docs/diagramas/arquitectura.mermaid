@@ -1,0 +1,7 @@
+```mermaid
+graph TD
+    UI[Frontend UI] --> API[FastAPI Backend]
+    API --> SQL[SQLite: framework_interno.db]
+    API --> ORA[Oracle DB: Ejecutor de Pruebas]
+    ORA -. Rollback Automático .-> ORA
+```
