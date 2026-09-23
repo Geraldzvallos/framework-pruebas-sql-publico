@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 def create_session_token():
-    secret = os.getenv("APP_SESSION_SECRET", "default_insecure_secret").encode()
+    secret = os.getenv("APP_SESSION_SECRET", "").encode()
     token_data = b"auth_valid"
     signature = hmac.new(secret, token_data, hashlib.sha256).hexdigest()
     return f"auth_valid.{signature}"
@@ -48,7 +48,7 @@ def create_session_token():
 def verify_session_token(token: str):
     if not token or not token.startswith("auth_valid."):
         return False
-    secret = os.getenv("APP_SESSION_SECRET", "default_insecure_secret").encode()
+    secret = os.getenv("APP_SESSION_SECRET", "").encode()
     expected_signature = hmac.new(secret, b"auth_valid", hashlib.sha256).hexdigest()
     try:
         _, signature = token.split(".", 1)
@@ -64,7 +64,8 @@ async def cookie_auth_middleware(request: Request, call_next):
 
     expected_username = os.getenv("APP_ACCESS_USERNAME", "").strip()
     expected_password = os.getenv("APP_ACCESS_PASSWORD", "").strip()
-    if not expected_username or not expected_password:
+    session_secret = os.getenv("APP_SESSION_SECRET", "").strip()
+    if not expected_username or not expected_password or not session_secret:
         return JSONResponse(status_code=503, content={"detail": "Service Unavailable: Incomplete configuration"})
 
     path = request.url.path

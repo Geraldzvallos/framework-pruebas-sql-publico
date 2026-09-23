@@ -97,3 +97,9 @@ def test_healthcheck_invalid_config(monkeypatch):
     client = TestClient(app)
     response = client.get("/")
     assert response.status_code == 503
+
+def test_missing_session_secret(monkeypatch):
+    monkeypatch.setenv("APP_SESSION_SECRET", "")
+    client = TestClient(app)
+    response = client.get("/api/projects/")
+    assert response.status_code == 503
