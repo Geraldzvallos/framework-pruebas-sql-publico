@@ -118,25 +118,35 @@ El flujo de ejecución es:
 6. Si el `rollback` falla, la prueba es marcada automáticamente como `FAIL/ERROR` (`success = False`).
 7. **Nunca se ejecuta `COMMIT`.**
 
-## 16. Estructura del Proyecto
+## 16. Estructura de Carpetas
+
 ```text
 framework_pruebas_sql/
 ├── alembic/             # Control de versiones de esquemas de BD (Alembic)
-├── app/
-│   ├── api/             # Endpoints y controladores REST (FastAPI)
-│   ├── core/            # Base de datos y configuración SQLite
-│   ├── engine/          # Motor SQL (Executor) y Estrategias de Validación
-│   ├── models/          # Modelos ORM SQLAlchemy y Esquemas Pydantic
-│   └── services/        # Capa de Servicios (Orquestador de ejecuciones)
-├── frontend/            # Interfaz de usuario (HTML, CSS, JS)
-├── infra/               # Infraestructura y contenedores Docker (Oracle local)
+├── app/                 # Backend REST API (FastAPI)
+├── docs/                # Documentación técnica y manuales
+├── frontend/
+│   ├── index.html       # Estructura principal SPA
+│   ├── css/             # Hojas de estilo
+│   └── js/              # Javascript Modular
+│       ├── app.js       # Coordinador principal
+│       ├── core/        # Utilidades, estado y cliente HTTP
+│       └── modulos/     # Funciones específicas de cada sección
+├── infra/               # Infraestructura Docker y Compose
 ├── tests/               # Pruebas automáticas (Pytest + Mocks + TestClient)
-├── alembic.ini          # Configuración de Alembic
 ├── framework_interno.db # Base de datos SQLite interna (desarrollo)
-├── pytest.ini           # Configuración de Pytest
-├── README.md            # Documentación del proyecto
 └── requirements.txt     # Lista de dependencias de Python
 ```
+
+## 17. Documentación y Manuales
+
+- [Referencia SRS y Arquitectura (SAD)](docs/referencia-srs-sad.md)
+- [Arquitectura Actual](docs/arquitectura-actual.md)
+- [Manual Técnico](docs/manual-tecnico.md)
+- [Manual de Usuario](docs/manual-usuario.md)
+
+## 18. Estado Real del Despliegue
+Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI) pero el despliegue final (CD) a un proveedor Cloud se encuentra retenido y documentado como pendiente de variables de entorno y DNS definitivos.
 
 ## 17. Oracle Database Free para Pruebas Locales (Fase 4.1)
 
