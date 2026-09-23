@@ -30,7 +30,7 @@ jobs:
       run: python -m pip check
       
     - name: Check JS syntax
-      run: find frontend -name "*.js" -exec node --check {} +
+      run: find frontend -name "*.js" -exec node --check {} \;
     - name: Prepare temporary SQLite DB
       run: |
         export FRAMEWORK_DB_URL=sqlite:///./temp_test_db.sqlite

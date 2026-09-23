@@ -2,7 +2,7 @@ name: Docs Check
 
 on:
   push:
-    branches: [ "main", "fase-4-2-despliegue" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -19,10 +19,23 @@ jobs:
       run: |
         test -f README.md
         test -f infra/production/README.md
-        test -f docs/manual_usuario.md
-        test -f docs/manual_tecnico.md
+        test -f docs/manual-usuario.md
+        test -f docs/manual-tecnico.md
         test -f docs/arquitectura.md
-        test -f docs/instalacion_y_despliegue.md
+        test -f docs/instalacion-local.md
+        test -f docs/despliegue.md
+        
+    - name: Verify diagrams exist
+      run: |
+        test -f docs/diagramas/actividad.mermaid
+        test -f docs/diagramas/arquitectura.mermaid
+        test -f docs/diagramas/base_datos.mermaid
+        test -f docs/diagramas/casos_uso.mermaid
+        test -f docs/diagramas/clases.mermaid
+        test -f docs/diagramas/componentes.mermaid
+        test -f docs/diagramas/despliegue.mermaid
+        test -f docs/diagramas/paquetes.mermaid
+        test -f docs/diagramas/secuencia.mermaid
         
     - name: Verify no secrets in examples
       run: |

@@ -89,7 +89,7 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 ## 12. Funcionalidades Implementadas
 - [x] **Gestión de Proyectos (CRUD):** Creación, lectura, actualización y eliminación de proyectos. Prevención de eliminación si existen dependencias.
 - [x] **Perfiles de Conexión (CRUD sin contraseñas):** Configuración de hosts, puertos, usernames y service names. Las contraseñas NO se almacenan en SQLite (ni en texto plano ni cifradas).
-- [x] **Prueba de Conexión:** Endpoint `/connections/{id}/test` para validar credenciales sin guardar la contraseña.
+- [x] **Prueba de Conexión:** Endpoint `/api/connections/{id}/test` para validar credenciales sin guardar la contraseña.
 - [x] **Casos de Prueba con validation_type:** Soporte para estancias de validación por `ROW_COUNT` (número de filas afectadas) y `EXISTS` (verificación boolean true/false).
 - [x] **Suites de Pruebas:** Agrupación de casos pertenecientes al mismo proyecto con validaciones de integridad (mismo proyecto, sin duplicados).
 - [x] **Motor de Ejecución Centralizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
