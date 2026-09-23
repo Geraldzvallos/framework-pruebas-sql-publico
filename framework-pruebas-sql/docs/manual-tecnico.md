@@ -33,9 +33,10 @@
 
 5. **Ejecución del Servidor**
    ```powershell
-   python app/main.py
+   uvicorn app.main:app --reload
    ```
-   El frontend será servido automáticamente por FastAPI en la raíz `/`.
+   La interfaz gráfica (frontend) será servida automáticamente en `http://127.0.0.1:8000/ui/`.
+   La documentación OpenAPI (Swagger) estará disponible en `http://127.0.0.1:8000/docs`.
 
 ## Ejecución de Pruebas Automáticas
 

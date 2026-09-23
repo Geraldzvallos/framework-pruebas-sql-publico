@@ -7,7 +7,7 @@ sequenceDiagram
 
     User->>UI: Clic en Ejecutar (Ingresa Password)
     UI->>API: POST /api/execute/test-case/{id}
-    API->>Service: execute_test_case(id, profile, password)
+    API->>Service: run_single_test_case_execution(id, profile, password)
     Service->>Oracle: connect(user, password, dsn)
     activate Oracle
     Oracle-->>Service: Conexión Establecida
@@ -21,6 +21,6 @@ sequenceDiagram
         Service->>Oracle: Omitir Rollback
     end
     deactivate Oracle
-    Service->>API: Retornar HistoryRecord (PASS/FAIL)
+    Service->>API: Retornar ExecutionHistory (PASS/FAIL)
     API-->>UI: 200 OK (JSON)
     UI->>User: Mostrar Modal de Resultados

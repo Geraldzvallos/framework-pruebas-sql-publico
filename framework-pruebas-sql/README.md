@@ -18,7 +18,7 @@ El objetivo del sistema es permitir definir, ejecutar, validar y registrar prueb
 ## 4. Arquitectura Actual
 El sistema sigue una arquitectura modular y desacoplada por capas:
 - **Frontend**: Interfaz web modular e integrada en `/ui/`. Incluye paneles de proyectos, conexiones, casos de prueba, ejecución de suites e historial con soporte móvil. Todos los endpoints funcionales comienzan con `/api`.
-- **API (Controladores / Routers)**: Endpoints REST v2 (`/projects`, `/connections`, `/test-cases`, `/suites`, `/history`, `/execute`).
+- **API (Controladores / Routers)**: Endpoints REST v2 (`/api/projects`, `/api/connections`, `/api/test-cases`, `/api/suites`, `/api/history`, `/api/execute`).
 - **Core & Persistencia**: Gestión de sesión y contexto de base de datos SQLite interna (`framework_interno.db`) con soporte de claves foráneas `PRAGMA foreign_keys = ON;` y migraciones con **Alembic**.
 - **Services (Capa de Servicios Centralizada)**:
   - `ExecutionService`: Orquestación centralizada de ejecuciones (individuales y por suite), selección de estrategia de validación (`ROW_COUNT` y `EXISTS`), formateo seguro de evidencias y registro en historial.
@@ -73,7 +73,7 @@ No abras `frontend/index.html` mediante `file://`, porque el flujo oficial utili
 pytest -v
 ```
 *Nota: Las pruebas automáticas corren sobre una base de datos SQLite en memoria aislada (`:memory:`) sin alterar `framework_interno.db` ni requerir una conexión Oracle real.*
-El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 60 pruebas normales y 11 pruebas Oracle separadas). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
+El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
 
 ## 11. Uso del Archivo `.env.example`
 Copia la plantilla de variables de entorno y ajusta los valores locales si es necesario:
@@ -92,7 +92,7 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 - [x] **Prueba de Conexión:** Endpoint `/connections/{id}/test` para validar credenciales sin guardar la contraseña.
 - [x] **Casos de Prueba con validation_type:** Soporte para estancias de validación por `ROW_COUNT` (número de filas afectadas) y `EXISTS` (verificación boolean true/false).
 - [x] **Suites de Pruebas:** Agrupación de casos pertenecientes al mismo proyecto con validaciones de integridad (mismo proyecto, sin duplicados).
-- [x] **Motor de Ejecución Centalizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
+- [x] **Motor de Ejecución Centralizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
 - [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo `project_id`, `suite_id`, `connection_profile_id`, `statement_type`, `validation_type`, `expected_result`, `actual_result`, `rowcount`, `rollback_applied` y `error_message`.
 - [x] **Consultas con Filtros y Paginación:** Búsqueda en historial por `project_id`, `test_case_id`, `suite_id` y `status`.
 - [x] **Migraciones Alembic:** Control de versiones de esquema de base de datos SQLite con soporte para SQLite batch mode (`render_as_batch=True`).
@@ -100,7 +100,7 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 
 ## 13. Capacidades de Despliegue
 - [x] Validación Oracle Real: Ejecución comprobada contra una base de datos Oracle XE o similar en un contenedor Docker.
-- [x] Preparación de producción y despliegue: variables, almacenamiento persistente, acceso protegido y pruebas sobre la URL publicada (despliegue público en curso).
+- [x] Preparación de producción y despliegue: variables, almacenamiento persistente, acceso protegido (despliegue en la nube sigue pendiente).
 
 ## 14. Advertencia de Seguridad
 > [!CAUTION]
@@ -127,9 +127,9 @@ framework_pruebas_sql/
 ├── docs/                # Documentación técnica y manuales
 ├── frontend/
 │   ├── index.html       # Estructura principal SPA
+│   ├── app.js           # Coordinador principal
 │   ├── css/             # Hojas de estilo
 │   └── js/              # Javascript Modular
-│       ├── app.js       # Coordinador principal
 │       ├── core/        # Utilidades, estado y cliente HTTP
 │       └── modulos/     # Funciones específicas de cada sección
 ├── infra/               # Infraestructura Docker y Compose
@@ -148,7 +148,7 @@ framework_pruebas_sql/
 - [Despliegue](docs/despliegue.md)
 
 ## 18. Estado Real del Despliegue
-Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI) pero el despliegue final (CD) a un proveedor Cloud se encuentra retenido y documentado como pendiente de variables de entorno y DNS definitivos.
+Actualmente, el despliegue automático mediante GitHub Actions está configurado para integración continua (CI). El despliegue a un proveedor Cloud sigue pendiente de variables de entorno y DNS definitivos.
 
 ## 19. Oracle Database Free para Pruebas Locales
 

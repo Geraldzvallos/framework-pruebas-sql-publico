@@ -91,10 +91,10 @@ def test_scenario_a_empty_db(tmp_path):
     else:
         assert len(data["items"]) > 0
 
-def test_scenario_b_legacy_fase1(tmp_path):
+def test_scenario_b_legacy(tmp_path):
     db_path = tmp_path / "test_b.db"
     
-    # 1. Construir esquema Fase 1
+    # 1. Construir esquema anterior
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, description TEXT)")
@@ -136,7 +136,7 @@ def test_scenario_b_legacy_fase1(tmp_path):
         cursor.execute("PRAGMA foreign_key_check")
         assert len(cursor.fetchall()) == 0
 
-def test_scenario_c_fase2_no_version(tmp_path):
+def test_scenario_c_no_version(tmp_path):
     db_path = tmp_path / "test_c.db"
     
     with sqlite3.connect(db_path) as conn:

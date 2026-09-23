@@ -68,7 +68,7 @@ docker compose --env-file .env.production up -d
 ## 9. Actualización sin destruir datos
 Para actualizar la aplicación sin perder información:
 ```bash
-git pull origin fase-4-2-despliegue
+git pull origin main
 docker compose --env-file .env.production build api
 docker compose --env-file .env.production up -d --no-deps api
 ```
@@ -79,7 +79,7 @@ Si la nueva versión de la imagen de la API presenta problemas o hay corrupción
 2. Restaurar los respaldos de los volúmenes obtenidos en el Paso 8.
 3. Desplegar la imagen de contenedor anterior:
 ```bash
-docker tag framework_pruebas_sql:version_anterior framework-pruebas-sql:fase-4-2
+docker tag framework_pruebas_sql:version_anterior sql-qa-framework:latest
 docker compose --env-file .env.production up -d
 ```
 *Nota: No se soporta `alembic downgrade` de manera oficial. Ante cambios de esquema, el rollback seguro siempre es restaurar el respaldo completo del volumen SQLite e iniciar la imagen previa de la aplicación.*

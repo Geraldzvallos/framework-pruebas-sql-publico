@@ -1,18 +1,27 @@
 # Respaldo y Restauración
 
-## Respaldo de framework_interno.db
-El motor principal guarda perfiles, historiales y suites en `framework_interno.db` (SQLite).
-Para realizar un respaldo seguro:
+## Respaldo
+
+El motor principal guarda perfiles, historiales y suites en `framework_interno.db` (SQLite). 
+Para realizar un respaldo seguro, simplemente realice una copia física del archivo local:
 ```bash
-python scripts/backup_db.py
+cp framework_interno.db framework_interno_backup.db
 ```
-O simplemente realice una copia física del archivo:
+
+Si está ejecutando el sistema mediante Docker, puede respaldar los datos del volumen persistente copiando el archivo desde el contenedor:
 ```bash
-cp framework_interno.db framework_interno.db.bak
+docker cp framework_api_prod:/data/framework_interno.db framework_interno_backup.db
 ```
 
 ## Restauración
-Para restaurar, detenga el proceso FastAPI y reemplace el archivo:
+
+Para restaurar de manera segura, es **obligatorio** realizar una detención controlada de la API antes de reemplazar el archivo, para evitar corrupción de datos.
+
+1. Detenga el proceso de la API (por ejemplo, con `Ctrl+C` si usa uvicorn localmente, o `docker compose down` si usa Docker).
+2. Reemplace el archivo de la base de datos con su respaldo:
 ```bash
-mv framework_interno.db.bak framework_interno.db
+# Restauración local
+mv framework_interno_backup.db framework_interno.db
 ```
+*(Si usa Docker, restaure iniciando un contenedor temporal o copiando de vuelta el archivo hacia el volumen/directorio montado).*
+3. Vuelva a iniciar la API (`uvicorn app.main:app --reload` o `docker compose up -d`).

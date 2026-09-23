@@ -15,8 +15,8 @@ def test_frontend_connection_profile_contract():
         "service_name": "xe",
         "username": "sys"
     }
-    # En la fase 2.1 un proyecto 1 se crea automáticamente si está la migración, o podemos intentar crear uno si falla
-    res_proj = client.post("/api/projects/", json={"name": "Fase 3.1", "description": ""})
+    # El proyecto 1 se crea automáticamente si está la migración, o podemos intentar crear uno si falla
+    res_proj = client.post("/api/projects/", json={"name": "Proyecto 1", "description": ""})
     proj_id = res_proj.json()["id"] if res_proj.status_code == 201 else 1
 
     payload["project_id"] = proj_id

@@ -1,5 +1,5 @@
 """
-Suite completa de pruebas automáticas para la Fase 2:
+Suite completa de pruebas automáticas:
 Modelo interno, API robusta, trazabilidad, proyectos y perfiles de conexión.
 """
 import os
