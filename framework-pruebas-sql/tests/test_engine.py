@@ -215,14 +215,14 @@ def test_test_db_isolation_and_framework_db_unmodified():
 @patch.dict(os.environ, {"MAX_RESULT_ROWS": "invalid", "ORACLE_CALL_TIMEOUT_MS": "-500"})
 def test_executor_safe_limits():
     """Verifica que los límites se parseen de forma segura usando valores por defecto."""
-    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="pwd")
+    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="contrasena_ficticia_test")
     assert executor.max_rows == 1000
     assert executor.timeout_ms == 10000
 
 @patch.dict(os.environ, {"MAX_RESULT_ROWS": "9999999", "ORACLE_CALL_TIMEOUT_MS": "9999999"})
 def test_executor_excessive_limits():
     """Verifica que si se superan los máximos, se asignan valores seguros."""
-    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="pwd")
+    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="contrasena_ficticia_test")
     assert executor.max_rows == 1000
     assert executor.timeout_ms == 10000
 
@@ -230,7 +230,7 @@ def test_executor_excessive_limits():
 def test_production_error_masking(mock_connect):
     """Verifica que los errores de conexión se enmascaren en PRODUCTION."""
     mock_connect.side_effect = Exception("Real connection error with sensitive data")
-    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="contrasena_ficticia_test", environment_type="PRODUCTION")
     res = executor.execute_query("SELECT 1 FROM dual")
     assert res["success"] is False
     assert "Real connection error" not in res["error_message"]
@@ -245,7 +245,7 @@ def test_production_execution_error_masking(mock_connect):
     mock_conn.cursor.return_value = mock_cursor
     mock_cursor.execute.side_effect = Exception("Real execution ORA-00000 error")
 
-    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="contrasena_ficticia_test", environment_type="PRODUCTION")
     res = executor.execute_query("SELECT * FROM sensitive_table")
     assert res["success"] is False
     assert "Real execution ORA-00000 error" not in res["error_message"]
@@ -253,20 +253,20 @@ def test_production_execution_error_masking(mock_connect):
 
 def test_executor_environment_type_normalization():
     """Verifica que environment_type con espacios y minúsculas se asigne correctamente."""
-    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type="  staging  ")
+    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="contrasena_ficticia_test", environment_type="  staging  ")
     assert executor.environment_type == "STAGING"
 
 def test_executor_environment_type_enum_normalization():
     """Verifica que un enum como EnvironmentTypeEnum.PRODUCTION se asigne correctamente."""
     from app.models.schemas import EnvironmentTypeEnum
-    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type=EnvironmentTypeEnum.PRODUCTION)
+    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="contrasena_ficticia_test", environment_type=EnvironmentTypeEnum.PRODUCTION)
     assert executor.environment_type == "PRODUCTION"
 
 def test_executor_invalid_environment_raises():
     """Verifica que un environment_type inválido lanza ValueError."""
     import pytest
     with pytest.raises(ValueError, match="Ambiente de ejecución inválido: INVALID"):
-        TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type="INVALID")
+        TargetDatabaseExecutor(dsn="dsn", user="u", password="contrasena_ficticia_test", environment_type="INVALID")
 
 @patch("oracledb.connect")
 def test_production_row_count_and_exists_work_with_hidden_rows(mock_connect):
@@ -280,7 +280,7 @@ def test_production_row_count_and_exists_work_with_hidden_rows(mock_connect):
     # Simular que fetchmany devuelve 5 filas
     mock_cursor.fetchmany.return_value = [("Data1",), ("Data2",), ("Data3",), ("Data4",), ("Data5",)]
 
-    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="contrasena_ficticia_test", environment_type="PRODUCTION")
     res = executor.execute_query("SELECT * FROM users")
 
     # En producción rows debe estar vacío
