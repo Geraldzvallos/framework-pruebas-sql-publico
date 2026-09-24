@@ -10,3 +10,4 @@
 | REQ-06 | Paginación y Filtrado Historial| `/api/history/` | `frontend/js/modulos/historial.js` | `tests/test_history_pagination.py` |
 | REQ-07 | Seguridad de Autenticación | Middleware (Cookie HttpOnly) | `frontend/js/core/api.js` | `tests/test_auth.py` |
 | REQ-08 | Dashboard de KPIs | `/api/history/` | `frontend/js/modulos/dashboard.js` | `tests/test_revision_final_frontend.py` |
+| REQ-09 | Políticas por Ambiente (TEST, STAGING, PRODUCTION) | `app/security/sql_policy.py`, `app/engine/executor.py` | `frontend/index.html` (Ayuda) | `tests/test_environment_policies.py`, `tests/test_engine.py` |

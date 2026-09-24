@@ -13,18 +13,36 @@ from app.security.sql_policy import validate_sql_statement
 
 class TargetDatabaseExecutor:
     """
-    Administra la sesión con la base de datos objetivo (Oracle) garantizando 
+    Administra la sesión con la base de datos objetivo (Oracle) garantizando
     el cumplimiento de las restricciones de seguridad (ej. Rollback por defecto).
     """
-    
+
     def __init__(self, dsn: str, user: str, password: str, environment_type: str = "TEST"):
         self.dsn = dsn
         self.user = user
         self.password = password
-        self.environment_type = environment_type
+
+        raw_environment = getattr(environment_type, "value", environment_type)
+        env_val = str(raw_environment).strip().upper() if raw_environment else "PRODUCTION"
+        if env_val not in {"TEST", "STAGING", "PRODUCTION"}:
+            raise ValueError(f"Ambiente de ejecución inválido: {env_val}")
+        self.environment_type = env_val
+
         self._connection: Optional[oracledb.Connection] = None
-        self.max_rows = int(os.getenv("MAX_RESULT_ROWS", "1000"))
-        self.timeout_ms = int(os.getenv("ORACLE_CALL_TIMEOUT_MS", "10000"))
+        try:
+            self.max_rows = int(os.getenv("MAX_RESULT_ROWS", "1000"))
+        except ValueError:
+            self.max_rows = 1000
+
+        try:
+            self.timeout_ms = int(os.getenv("ORACLE_CALL_TIMEOUT_MS", "10000"))
+        except ValueError:
+            self.timeout_ms = 10000
+
+        if self.max_rows <= 0 or self.max_rows > 100000:
+            self.max_rows = 1000
+        if self.timeout_ms <= 0 or self.timeout_ms > 300000:
+            self.timeout_ms = 10000
 
     def connect(self) -> None:
         """Establece la conexión utilizando oracledb en modo thin."""
@@ -43,18 +61,18 @@ class TargetDatabaseExecutor:
             return msg.replace(self.password, "******")
         return msg
 
-    def execute_query(self, query: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute_query(self, query: str, params: Optional[Dict[str, Any]] = None, confirm_staging_dml: bool = False) -> Dict[str, Any]:
         """
         Ejecuta una sentencia SQL aislada y devuelve una estructura de respuesta estandarizada.
-        
+
         Args:
             query: Sentencia SQL a procesar.
             params: Diccionario de parámetros para binding seguro.
-            
+
         Returns:
             Dict[str, Any]: Estructura estandarizada con success, statement_type, rows, rowcount, message, error_message, rollback_applied, rollback_error.
         """
-        is_valid, stmt_type, validation_error = validate_sql_statement(query, self.environment_type)
+        is_valid, stmt_type, validation_error = validate_sql_statement(query, self.environment_type, confirm_staging_dml)
         if not is_valid:
             return {
                 "success": False,
@@ -72,6 +90,8 @@ class TargetDatabaseExecutor:
                 self.connect()
         except Exception as e:
             err_msg = self._sanitize_message(str(e))
+            if self.environment_type == "PRODUCTION":
+                err_msg = "Error de conexión oculto por políticas de seguridad."
             return {
                 "success": False,
                 "statement_type": stmt_type,
@@ -98,12 +118,16 @@ class TargetDatabaseExecutor:
                 fetched_rows = cursor.fetchmany(self.max_rows)
                 row_count = len(fetched_rows)
                 query_success = True
+                if self.environment_type == "PRODUCTION":
+                    fetched_rows = []
             else:
                 row_count = cursor.rowcount
                 query_success = True
 
         except Exception as e:
             exec_error = self._sanitize_message(str(e))
+            if self.environment_type == "PRODUCTION":
+                exec_error = "Error de ejecución oculto por políticas de seguridad."
             query_success = False
 
         # Gestión estricta y transparente de Rollback
@@ -118,7 +142,10 @@ class TargetDatabaseExecutor:
                         rollback_applied = True
                 except Exception as rb_exc:
                     rollback_applied = False
-                    rollback_error = self._sanitize_message(str(rb_exc))
+                    rb_err_str = self._sanitize_message(str(rb_exc))
+                    if self.environment_type == "PRODUCTION":
+                        rb_err_str = "Error de rollback oculto por políticas de seguridad."
+                    rollback_error = rb_err_str
 
         # Cierre seguro del cursor
         if cursor:

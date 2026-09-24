@@ -135,7 +135,7 @@ class TestCaseCreate(BaseModel):
         raw_val_type = info.data.get('validation_type', ValidationTypeEnum.ROW_COUNT)
         val_type_str = str(getattr(raw_val_type, 'value', raw_val_type)).upper()
         clean_v = v.strip()
-        
+
         if val_type_str == "ROW_COUNT":
             try:
                 val = int(clean_v)
@@ -214,6 +214,8 @@ class DBCredentials(BaseModel):
     user: Optional[str] = None
     password: str
     connection_profile_id: Optional[int] = None
+    environment_type: EnvironmentTypeEnum = EnvironmentTypeEnum.PRODUCTION
+    confirm_staging_dml: bool = False
 
 class ExecutionRequest(DBCredentials):
     sql_query: str

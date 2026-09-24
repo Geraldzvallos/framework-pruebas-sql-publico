@@ -200,14 +200,129 @@ def test_test_db_isolation_and_framework_db_unmodified():
     if os.path.exists(db_file):
         initial_size = os.path.getsize(db_file)
         initial_mtime = os.path.getmtime(db_file)
-        
+
         # Simular lectura
         with open(db_file, "rb") as f:
             initial_hash = hashlib.sha256(f.read()).hexdigest()
-            
+
         assert os.path.getsize(db_file) == initial_size
         assert os.path.getmtime(db_file) == initial_mtime
-        
+
         with open(db_file, "rb") as f:
             final_hash = hashlib.sha256(f.read()).hexdigest()
         assert initial_hash == final_hash
+
+@patch.dict(os.environ, {"MAX_RESULT_ROWS": "invalid", "ORACLE_CALL_TIMEOUT_MS": "-500"})
+def test_executor_safe_limits():
+    """Verifica que los límites se parseen de forma segura usando valores por defecto."""
+    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="pwd")
+    assert executor.max_rows == 1000
+    assert executor.timeout_ms == 10000
+
+@patch.dict(os.environ, {"MAX_RESULT_ROWS": "9999999", "ORACLE_CALL_TIMEOUT_MS": "9999999"})
+def test_executor_excessive_limits():
+    """Verifica que si se superan los máximos, se asignan valores seguros."""
+    executor = TargetDatabaseExecutor(dsn="dsn", user="user", password="pwd")
+    assert executor.max_rows == 1000
+    assert executor.timeout_ms == 10000
+
+@patch("oracledb.connect")
+def test_production_error_masking(mock_connect):
+    """Verifica que los errores de conexión se enmascaren en PRODUCTION."""
+    mock_connect.side_effect = Exception("Real connection error with sensitive data")
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    res = executor.execute_query("SELECT 1 FROM dual")
+    assert res["success"] is False
+    assert "Real connection error" not in res["error_message"]
+    assert "oculto por políticas" in res["error_message"]
+
+@patch("oracledb.connect")
+def test_production_execution_error_masking(mock_connect):
+    """Verifica que los errores de ejecución se enmascaren en PRODUCTION."""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    mock_cursor.execute.side_effect = Exception("Real execution ORA-00000 error")
+
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    res = executor.execute_query("SELECT * FROM sensitive_table")
+    assert res["success"] is False
+    assert "Real execution ORA-00000 error" not in res["error_message"]
+    assert "oculto por políticas" in res["error_message"]
+
+def test_executor_environment_type_normalization():
+    """Verifica que environment_type con espacios y minúsculas se asigne correctamente."""
+    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type="  staging  ")
+    assert executor.environment_type == "STAGING"
+
+def test_executor_environment_type_enum_normalization():
+    """Verifica que un enum como EnvironmentTypeEnum.PRODUCTION se asigne correctamente."""
+    from app.models.schemas import EnvironmentTypeEnum
+    executor = TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type=EnvironmentTypeEnum.PRODUCTION)
+    assert executor.environment_type == "PRODUCTION"
+
+def test_executor_invalid_environment_raises():
+    """Verifica que un environment_type inválido lanza ValueError."""
+    import pytest
+    with pytest.raises(ValueError, match="Ambiente de ejecución inválido: INVALID"):
+        TargetDatabaseExecutor(dsn="dsn", user="u", password="p", environment_type="INVALID")
+
+@patch("oracledb.connect")
+def test_production_row_count_and_exists_work_with_hidden_rows(mock_connect):
+    """Verifica que ROW_COUNT y EXISTS pasen en producción aunque rows=[]."""
+    from app.engine.validator import ValidationContext, RowCountValidation, ExistenceValidation
+
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    # Simular que fetchmany devuelve 5 filas
+    mock_cursor.fetchmany.return_value = [("Data1",), ("Data2",), ("Data3",), ("Data4",), ("Data5",)]
+
+    executor = TargetDatabaseExecutor(dsn="localhost/xe", user="u", password="p", environment_type="PRODUCTION")
+    res = executor.execute_query("SELECT * FROM users")
+
+    # En producción rows debe estar vacío
+    assert res["success"] is True
+    assert res["rows"] == []
+    assert res["rowcount"] == 5
+
+    ctx = ValidationContext(RowCountValidation())
+    assert ctx.execute_validation(res, "5") is True
+
+    ctx.set_strategy(ExistenceValidation())
+    assert ctx.execute_validation(res, "TRUE") is True
+
+def test_rollback_error_not_stored_in_production():
+    """Verifica que rollback_error real nunca quede almacenado en producción en el execution_service."""
+    from app.services.execution_service import run_single_test_case_execution
+    from app.models.test_case import TestCase
+
+    executor_mock = MagicMock()
+    executor_mock.environment_type = "PRODUCTION"
+    executor_mock.execute_query.return_value = {
+        "success": False,
+        "statement_type": "UPDATE",
+        "rows": [],
+        "rowcount": 0,
+        "message": "Fallo simulado.",
+        "error_message": "Real Oracle Error 9999",
+        "rollback_applied": False,
+        "rollback_error": "Real Rollback ORA-1234 Error"
+    }
+
+    db_mock = MagicMock()
+    tc_mock = MagicMock(spec=TestCase)
+    tc_mock.id = 1
+    tc_mock.project_id = 1
+    tc_mock.sql_query = "UPDATE table SET a=1"
+    tc_mock.validation_type = "ROW_COUNT"
+    tc_mock.expected_result = "1"
+
+    history_record = run_single_test_case_execution(db=db_mock, tc=tc_mock, executor=executor_mock)
+
+    assert "Real Oracle Error 9999" not in history_record.error_message
+    assert "oculto por políticas" in history_record.error_message
+    assert "Real Rollback ORA-1234 Error" not in history_record.rollback_error
+    assert "oculto por políticas" in history_record.rollback_error

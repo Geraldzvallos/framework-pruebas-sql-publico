@@ -73,7 +73,7 @@ No abras `frontend/index.html` mediante `file://`, porque el flujo oficial utili
 pytest -v
 ```
 *Nota: Las pruebas automáticas corren sobre una base de datos SQLite en memoria aislada (`:memory:`) sin alterar `framework_interno.db` ni requerir una conexión Oracle real.*
-El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
+El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. Para entornos de Producción, el sistema aplica una estricta política de solo lectura (SELECT).
 
 ## 11. Uso del Archivo `.env.example`
 Copia la plantilla de variables de entorno y ajusta los valores locales si es necesario:
@@ -104,8 +104,8 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 
 ## 14. Advertencia de Seguridad
 > [!CAUTION]
-> **NO UTILIZAR UNA BASE DE DATOS ORACLE DE PRODUCCIÓN.**
-> Ejecute el framework únicamente contra entornos de pruebas de bases de datos dedicados o aislados. Aunque el framework aplica `ROLLBACK` de forma obligatoria en operaciones DML, nunca debe probarse contra entornos de producción reales.
+> **POLÍTICA PARA ENTORNOS DE PRODUCCIÓN:**
+> El framework puede conectarse a entornos de producción exclusivamente bajo la clasificación `PRODUCTION`. En este modo, el sistema bloquea cualquier sentencia DML/DDL y enmascara los datos reales (filas ocultas, solo conteos visibles). Adicionalmente, el perfil de conexión debe estar configurado obligatoriamente con un usuario Oracle exclusivo que tenga **únicamente permisos de lectura (SELECT)** sobre las tablas necesarias.
 
 ## 15. Explicación del Mecanismo de Rollback
 Las pruebas que modifican datos (`INSERT`, `UPDATE`, `DELETE`) deben ejecutarse sin dejar datos residuales en la base de datos objetivo.

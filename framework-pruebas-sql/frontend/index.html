@@ -100,8 +100,13 @@
                                 <li><b>Ejecución:</b> Inicie la prueba. Si modifica datos, se aplicará <code>ROLLBACK</code> automáticamente.</li>
                                 <li><b>Historial:</b> Revise detalladamente si los resultados obtenidos coinciden con lo esperado.</li>
                             </ol>
-                            <div class="alert alert-danger mt-3">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <b>Advertencia:</b> No utilice este framework contra una base de datos de producción real.
+                            <div class="alert alert-info mt-3">
+                                <i class="bi bi-info-circle-fill me-2"></i> <b>Seguridad:</b> La ejecución de operaciones DML dependerá del entorno configurado en su conexión:
+                                <ul>
+                                    <li><b>TEST:</b> DML con rollback.</li>
+                                    <li><b>STAGING:</b> confirmación obligatoria y rollback.</li>
+                                    <li><b>PRODUCTION:</b> solo SELECT con usuario Oracle de lectura.</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
