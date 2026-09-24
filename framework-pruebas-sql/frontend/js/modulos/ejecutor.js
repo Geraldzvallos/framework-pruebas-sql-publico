@@ -45,6 +45,23 @@ export async function procesarPasswordSubmit(e) {
     btn.disabled = true; spinner.classList.remove("hidden"); text.innerText = "Ejecutando...";
 
     try {
+        if (execAction !== "TEST_CONN") {
+            const conn = estado.conexiones.find(c => c.id == connId);
+            if (conn) {
+                if (conn.environment_type === 'STAGING') {
+                    if (!window.confirm("ATENCIÓN: Está ejecutando en STAGING. ¿Está seguro de proceder? Las sentencias DML requerirán confirmación.")) {
+                        btn.disabled = false; spinner.classList.add("hidden"); text.innerText = "Proceder";
+                        return;
+                    }
+                } else if (conn.environment_type === 'PRODUCTION') {
+                    if (!window.confirm("¡PELIGRO! Está ejecutando en PRODUCTION. Todo intento de DML será estrictamente rechazado por el backend. ¿Desea proceder con la ejecución de solo lectura?")) {
+                        btn.disabled = false; spinner.classList.add("hidden"); text.innerText = "Proceder";
+                        return;
+                    }
+                }
+            }
+        }
+
         if (execAction === "TEST_CONN") {
             await fetchAPI(`/connections/${execTargetId}/test`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({password: pwd}) });
             getModalPwdInst().hide();

@@ -8,6 +8,7 @@ graph TD
         Auth[Basic Auth Middleware]
         Routers[API Routers]
         ExecService[Execution Service]
+        Security[SQL Security Engine / sqlparse]
         Alembic[Alembic Migrations]
     end
 
@@ -20,6 +21,8 @@ graph TD
     Auth --> FastAPI
     FastAPI --> Routers
     Routers --> ExecService
+    ExecService --> Security
     Routers -- CRUD --> SQLite
+    Security -- Validation --> Oracle
     ExecService -- oracledb --> Oracle
     Alembic -- schema updates --> SQLite

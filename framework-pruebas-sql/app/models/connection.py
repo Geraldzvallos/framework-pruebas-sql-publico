@@ -20,6 +20,7 @@ class ConnectionProfile(Base):
     port = Column(Integer, default=1521, nullable=False)
     service_name = Column(String, nullable=False)
     username = Column(String, nullable=False)
+    environment_type = Column(String, default="TEST", nullable=False)
     created_at = Column(DateTime(timezone=True), default=get_utc_now)
     updated_at = Column(DateTime(timezone=True), default=get_utc_now, onupdate=get_utc_now)
 

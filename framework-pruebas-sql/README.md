@@ -92,8 +92,8 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 - [x] **Prueba de Conexión:** Endpoint `/api/connections/{id}/test` para validar credenciales sin guardar la contraseña.
 - [x] **Casos de Prueba con validation_type:** Soporte para estancias de validación por `ROW_COUNT` (número de filas afectadas) y `EXISTS` (verificación boolean true/false).
 - [x] **Suites de Pruebas:** Agrupación de casos pertenecientes al mismo proyecto con validaciones de integridad (mismo proyecto, sin duplicados).
-- [x] **Motor de Ejecución Centralizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
-- [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo `project_id`, `suite_id`, `connection_profile_id`, `statement_type`, `validation_type`, `expected_result`, `actual_result`, `rowcount`, `rollback_applied` y `error_message`.
+- [x] **Motor de Ejecución Centralizado y Seguridad por Entornos:** Motor SQL robusto con analizador `sqlparse`. Bloquea DDL y sentencias múltiples. Aplica reglas estrictas según entorno (`TEST`, `STAGING`, `PRODUCTION`), requiriendo confirmación para DML en preproducción y bloqueándolo absolutamente en producción (donde además se enmascaran los datos en el historial).
+- [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo detalles técnicos. Límite configurable de `MAX_RESULT_ROWS` y `ORACLE_CALL_TIMEOUT_MS`.
 - [x] **Consultas con Filtros y Paginación:** Búsqueda en historial por `project_id`, `test_case_id`, `suite_id` y `status`.
 - [x] **Migraciones Alembic:** Control de versiones de esquema de base de datos SQLite con soporte para SQLite batch mode (`render_as_batch=True`).
 - [x] **Aislamiento Total en Pruebas:** Pytest 100% aislado en memoria (`:memory:`), sin modificar `framework_interno.db`.

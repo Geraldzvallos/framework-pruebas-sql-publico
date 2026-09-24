@@ -7,6 +7,7 @@ import os
 
 # Configurar variable de entorno para la base de datos de pruebas en memoria ANTES de las importaciones
 os.environ["FRAMEWORK_DB_URL"] = "sqlite:///:memory:"
+os.environ["APP_ACCESS_ENABLED"] = "false"
 
 import pytest
 from sqlalchemy import create_engine, event

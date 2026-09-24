@@ -30,7 +30,7 @@ def execute_target_sql(request: schemas.ExecutionRequest, db: Session = Depends(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
+    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type="TEST")
     try:
         res = executor.execute_query(request.sql_query)
         if not res["success"]:
@@ -84,7 +84,8 @@ def run_test_case(test_case_id: int, db_credentials: schemas.TestCaseExecutionRe
         raise HTTPException(status_code=400, detail=str(e))
 
     profile_id = profile.id if profile else db_credentials.connection_profile_id
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
+    env_type = profile.environment_type if profile else "TEST"
+    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type=env_type)
     
     try:
         history_record = run_single_test_case_execution(
@@ -142,7 +143,8 @@ def run_test_suite(suite_id: int, db_credentials: schemas.SuiteExecutionRequest,
         raise HTTPException(status_code=400, detail=str(e))
 
     profile_id = profile.id if profile else db_credentials.connection_profile_id
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
+    env_type = profile.environment_type if profile else "TEST"
+    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type=env_type)
 
     try:
         for tc in suite.test_cases:

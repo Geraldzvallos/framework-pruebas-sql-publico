@@ -93,7 +93,7 @@ def test_connection_profile(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al construir el DSN: {str(e)}")
 
-    executor = TargetDatabaseExecutor(dsn=dsn, user=profile.username, password=request.password)
+    executor = TargetDatabaseExecutor(dsn=dsn, user=profile.username, password=request.password, environment_type=profile.environment_type)
     try:
         res = executor.execute_query("SELECT 1 FROM DUAL")
         if not res["success"]:

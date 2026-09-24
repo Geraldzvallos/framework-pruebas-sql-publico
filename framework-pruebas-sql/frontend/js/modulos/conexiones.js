@@ -15,9 +15,19 @@ export function formConexion(c = null) {
             <div class="col-md-6 mb-3"><label class="form-label">Host</label><input type="text" id="f-conn-host" class="form-control" required value="${escapeHTML(c?.host||'')}"></div>
             <div class="col-md-4 mb-3"><label class="form-label">Puerto</label><input type="number" id="f-conn-port" class="form-control" required value="${c?.port||1521}"></div>
             <div class="col-md-8 mb-3"><label class="form-label">Service Name</label><input type="text" id="f-conn-service" class="form-control" required value="${escapeHTML(c?.service_name||'')}"></div>
-            <div class="col-md-12 mb-3"><label class="form-label">Usuario</label><input type="text" id="f-conn-user" class="form-control" required value="${escapeHTML(c?.username||'')}"></div>
+            <div class="col-md-6 mb-3"><label class="form-label">Usuario</label><input type="text" id="f-conn-user" class="form-control" required value="${escapeHTML(c?.username||'')}"></div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Ambiente</label>
+                <select id="f-conn-env" class="form-select" required>
+                    <option value="TEST" ${c?.environment_type === 'TEST' ? 'selected' : ''}>TEST</option>
+                    <option value="STAGING" ${c?.environment_type === 'STAGING' ? 'selected' : ''}>STAGING</option>
+                    <option value="PRODUCTION" ${c?.environment_type === 'PRODUCTION' ? 'selected' : ''}>PRODUCTION</option>
+                </select>
+            </div>
         </div>
-        <small class="text-muted">Motor: ORACLE. Las contraseñas no se persisten.</small>
+        <div class="alert alert-warning small py-2 mt-2 mb-0">
+            <strong>Atención:</strong> DML (INSERT, UPDATE, DELETE) en STAGING requiere confirmación explícita. DML y DDL están ESTRICTAMENTE BLOQUEADOS en PRODUCTION.
+        </div>
     `;
     abrirModalGeneral(c ? "Editar Perfil" : "Nuevo Perfil", html, c ? "CONN_EDIT" : "CONN_NEW", c?.id);
 }
@@ -30,7 +40,8 @@ export async function saveConexion() {
         host: document.getElementById("f-conn-host").value,
         port: parseInt(document.getElementById("f-conn-port").value),
         service_name: document.getElementById("f-conn-service").value,
-        username: document.getElementById("f-conn-user").value
+        username: document.getElementById("f-conn-user").value,
+        environment_type: document.getElementById("f-conn-env").value
     };
     if (modalGeneralAction === "CONN_NEW") {
         await fetchAPI("/connections/", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
@@ -48,8 +59,15 @@ export async function cargarConexiones() {
         const tbody = document.getElementById("tabla-conexiones");
         tbody.innerHTML = "";
         estado.conexiones.forEach(c => {
+            let envBadge = 'bg-secondary';
+            if (c.environment_type === 'TEST') envBadge = 'bg-success';
+            else if (c.environment_type === 'STAGING') envBadge = 'bg-warning text-dark';
+            else if (c.environment_type === 'PRODUCTION') envBadge = 'bg-danger';
+
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${c.id}</td><td><strong>${escapeHTML(c.name)}</strong></td><td>${escapeHTML(c.host)}:${c.port}</td>
+            tr.innerHTML = `<td>${c.id}</td>
+                <td><strong>${escapeHTML(c.name)}</strong> <span class="badge ${envBadge} ms-2">${c.environment_type}</span></td>
+                <td>${escapeHTML(c.host)}:${c.port}</td>
                 <td>${escapeHTML(c.service_name)}</td><td>${escapeHTML(c.username)}</td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-info btn-test" data-id="${c.id}"><i class="bi bi-plug"></i></button>

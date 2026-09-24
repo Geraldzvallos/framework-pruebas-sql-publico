@@ -93,7 +93,10 @@ def run_single_test_case_execution(
     rollback_applied = res.get("rollback_applied", False)
     rollback_error = res.get("rollback_error")
     
-    actual_result_str = format_actual_result(rows if stmt_type == "SELECT" else f"Filas afectadas: {rowcount}")
+    if getattr(executor, 'environment_type', 'TEST') == "PRODUCTION":
+        actual_result_str = format_actual_result(f"Operación exitosa. {rowcount} filas leídas.") if stmt_type == "SELECT" else format_actual_result(f"Filas afectadas: {rowcount}")
+    else:
+        actual_result_str = format_actual_result(rows if stmt_type == "SELECT" else f"Filas afectadas: {rowcount}")
 
     # 2. Evaluación del resultado
     if not res.get("success", False):

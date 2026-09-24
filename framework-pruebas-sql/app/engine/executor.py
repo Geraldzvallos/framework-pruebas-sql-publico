@@ -7,68 +7,8 @@ from sqlparse.tokens import Whitespace, Comment as CommentToken, String, Keyword
 import oracledb
 from typing import Any, Dict, List, Tuple, Optional
 
-FORBIDDEN_KEYWORDS = {"CREATE", "ALTER", "DROP", "TRUNCATE", "GRANT", "REVOKE", "COMMIT", "ROLLBACK"}
-
-
-def validate_sql_statement(query: str) -> Tuple[bool, str, str]:
-    """
-    Valida la sentencia SQL utilizando sqlparse para distinguir código SQL de literales de texto y comentarios.
-    
-    Soporte de CTE / WITH: Las consultas que inician con la cláusula WITH son identificadas
-    según la sentencia principal (SELECT, INSERT, UPDATE, DELETE).
-    
-    Returns:
-        Tuple[bool, str, str]: (is_valid, statement_type, error_message)
-    """
-    if not query or not query.strip():
-        return False, "UNKNOWN", "La consulta SQL no puede estar vacía."
-
-    parsed = sqlparse.parse(query)
-    
-    # Filtrar sentencias vacías o que solo contengan comentarios/espacios
-    valid_statements = []
-    for stmt in parsed:
-        real_tokens = [
-            t for t in stmt.flatten()
-            if t.ttype not in (Whitespace, CommentToken, CommentToken.Single, CommentToken.Multiline)
-            and t.value.strip()
-        ]
-        if real_tokens:
-            valid_statements.append((stmt, real_tokens))
-
-    if len(valid_statements) == 0:
-        return False, "UNKNOWN", "La consulta SQL no puede estar vacía."
-
-    if len(valid_statements) > 1:
-        return False, "MULTIPLE", "Rechazado: No se permite la ejecución de múltiples sentencias SQL en una sola solicitud."
-
-    stmt, real_tokens = valid_statements[0]
-    
-    # Identificar el comando principal (obviando comentarios iniciales)
-    first_kw = real_tokens[0].value.upper()
-    
-    # Manejo especial para CTE (WITH ... SELECT/DML)
-    if first_kw == "WITH":
-        parsed_type = stmt.get_type().upper()
-        stmt_type = parsed_type if parsed_type in {"SELECT", "INSERT", "UPDATE", "DELETE"} else "WITH"
-    else:
-        stmt_type = first_kw
-
-    # Verificar palabras prohibidas SOLAMENTE en tokens de código (ignorando cadenas de texto y comentarios)
-    for token in real_tokens:
-        # Los literales de texto son ignorados (ej: 'DROP', 'a;b', 'COMMIT realizado')
-        if token.ttype in (String, String.Single, String.Symbol, String.Double):
-            continue
-            
-        token_val = token.value.upper()
-        if token_val in FORBIDDEN_KEYWORDS:
-            return False, stmt_type, f"Rechazado por seguridad: Comandos DDL o de control prohibidos detectados ({token_val})."
-
-    # Verificar que la sentencia principal sea DML o SELECT
-    if stmt_type not in {"SELECT", "INSERT", "UPDATE", "DELETE"}:
-        return False, stmt_type, f"Tipo de sentencia no soportada: {stmt_type}. Solo se permiten SELECT, INSERT, UPDATE, DELETE."
-
-    return True, stmt_type, ""
+import os
+from app.security.sql_policy import validate_sql_statement
 
 
 class TargetDatabaseExecutor:
@@ -77,11 +17,14 @@ class TargetDatabaseExecutor:
     el cumplimiento de las restricciones de seguridad (ej. Rollback por defecto).
     """
     
-    def __init__(self, dsn: str, user: str, password: str):
+    def __init__(self, dsn: str, user: str, password: str, environment_type: str = "TEST"):
         self.dsn = dsn
         self.user = user
         self.password = password
+        self.environment_type = environment_type
         self._connection: Optional[oracledb.Connection] = None
+        self.max_rows = int(os.getenv("MAX_RESULT_ROWS", "1000"))
+        self.timeout_ms = int(os.getenv("ORACLE_CALL_TIMEOUT_MS", "10000"))
 
     def connect(self) -> None:
         """Establece la conexión utilizando oracledb en modo thin."""
@@ -90,6 +33,8 @@ class TargetDatabaseExecutor:
             password=self.password,
             dsn=self.dsn
         )
+        if hasattr(self._connection, 'call_timeout'):
+            self._connection.call_timeout = self.timeout_ms
         self._connection.autocommit = False
 
     def _sanitize_message(self, msg: str) -> str:
@@ -109,7 +54,7 @@ class TargetDatabaseExecutor:
         Returns:
             Dict[str, Any]: Estructura estandarizada con success, statement_type, rows, rowcount, message, error_message, rollback_applied, rollback_error.
         """
-        is_valid, stmt_type, validation_error = validate_sql_statement(query)
+        is_valid, stmt_type, validation_error = validate_sql_statement(query, self.environment_type)
         if not is_valid:
             return {
                 "success": False,
@@ -150,7 +95,7 @@ class TargetDatabaseExecutor:
             cursor.execute(cleaned_sql, params or {})
 
             if stmt_type == "SELECT":
-                fetched_rows = cursor.fetchall()
+                fetched_rows = cursor.fetchmany(self.max_rows)
                 row_count = len(fetched_rows)
                 query_success = True
             else:
