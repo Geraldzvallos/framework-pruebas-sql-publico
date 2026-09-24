@@ -42,7 +42,7 @@ class RowCountValidation(ValidationStrategy):
                 
             stmt_type = execution_data.get("statement_type", "").upper()
             if stmt_type == "SELECT":
-                actual_count = len(execution_data.get("rows", []))
+                actual_count = execution_data.get("rowcount", len(execution_data.get("rows", [])))
             else:
                 actual_count = execution_data.get("rowcount", 0)
         elif isinstance(execution_data, list):
@@ -67,7 +67,7 @@ class ExistenceValidation(ValidationStrategy):
                 return False
             stmt_type = execution_data.get("statement_type", "").upper()
             if stmt_type == "SELECT":
-                has_data = len(execution_data.get("rows", [])) > 0
+                has_data = execution_data.get("rowcount", len(execution_data.get("rows", []))) > 0
             else:
                 has_data = execution_data.get("rowcount", 0) > 0
         elif isinstance(execution_data, list):

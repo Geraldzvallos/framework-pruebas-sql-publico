@@ -73,7 +73,7 @@ No abras `frontend/index.html` mediante `file://`, porque el flujo oficial utili
 pytest -v
 ```
 *Nota: Las pruebas automáticas corren sobre una base de datos SQLite en memoria aislada (`:memory:`) sin alterar `framework_interno.db` ni requerir una conexión Oracle real.*
-El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. El producto no debe utilizarse contra una base Oracle de producción.
+El total de pruebas de la suite completa se informa en los resultados. Oracle Database Free ya fue validado localmente (con 76 pruebas normales y 11 Oracle). La contraseña se solicita únicamente al probar o ejecutar y nunca se persiste. Para entornos de Producción, el sistema aplica una estricta política de solo lectura (SELECT).
 
 ## 11. Uso del Archivo `.env.example`
 Copia la plantilla de variables de entorno y ajusta los valores locales si es necesario:
@@ -92,8 +92,8 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 - [x] **Prueba de Conexión:** Endpoint `/api/connections/{id}/test` para validar credenciales sin guardar la contraseña.
 - [x] **Casos de Prueba con validation_type:** Soporte para estancias de validación por `ROW_COUNT` (número de filas afectadas) y `EXISTS` (verificación boolean true/false).
 - [x] **Suites de Pruebas:** Agrupación de casos pertenecientes al mismo proyecto con validaciones de integridad (mismo proyecto, sin duplicados).
-- [x] **Motor de Ejecución Centralizado:** Motor SQL robusto con `ROLLBACK` obligatorio tras DML, enmascaramiento de secretos y captura de evidencia.
-- [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo `project_id`, `suite_id`, `connection_profile_id`, `statement_type`, `validation_type`, `expected_result`, `actual_result`, `rowcount`, `rollback_applied` y `error_message`.
+- [x] **Motor de Ejecución Centralizado y Seguridad por Entornos:** Motor SQL robusto con analizador `sqlparse`. Bloquea DDL y sentencias múltiples. Aplica reglas estrictas según entorno (`TEST`, `STAGING`, `PRODUCTION`), requiriendo confirmación para DML en preproducción y bloqueándolo absolutamente en producción (donde además se enmascaran los datos en el historial).
+- [x] **Historial Completo y Trazabilidad:** Registro persistente de ejecuciones (`ExecutionHistory`) incluyendo detalles técnicos. Límite configurable de `MAX_RESULT_ROWS` y `ORACLE_CALL_TIMEOUT_MS`.
 - [x] **Consultas con Filtros y Paginación:** Búsqueda en historial por `project_id`, `test_case_id`, `suite_id` y `status`.
 - [x] **Migraciones Alembic:** Control de versiones de esquema de base de datos SQLite con soporte para SQLite batch mode (`render_as_batch=True`).
 - [x] **Aislamiento Total en Pruebas:** Pytest 100% aislado en memoria (`:memory:`), sin modificar `framework_interno.db`.
@@ -104,8 +104,8 @@ Los datos del perfil Oracle se registran desde la interfaz. La contraseña se so
 
 ## 14. Advertencia de Seguridad
 > [!CAUTION]
-> **NO UTILIZAR UNA BASE DE DATOS ORACLE DE PRODUCCIÓN.**
-> Ejecute el framework únicamente contra entornos de pruebas de bases de datos dedicados o aislados. Aunque el framework aplica `ROLLBACK` de forma obligatoria en operaciones DML, nunca debe probarse contra entornos de producción reales.
+> **POLÍTICA PARA ENTORNOS DE PRODUCCIÓN:**
+> El framework puede conectarse a entornos de producción exclusivamente bajo la clasificación `PRODUCTION`. En este modo, el sistema bloquea cualquier sentencia DML/DDL y enmascara los datos reales (filas ocultas, solo conteos visibles). Adicionalmente, el perfil de conexión debe estar configurado obligatoriamente con un usuario Oracle exclusivo que tenga **únicamente permisos de lectura (SELECT)** sobre las tablas necesarias.
 
 ## 15. Explicación del Mecanismo de Rollback
 Las pruebas que modifican datos (`INSERT`, `UPDATE`, `DELETE`) deben ejecutarse sin dejar datos residuales en la base de datos objetivo.

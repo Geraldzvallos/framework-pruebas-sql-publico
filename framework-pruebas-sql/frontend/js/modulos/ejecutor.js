@@ -45,12 +45,31 @@ export async function procesarPasswordSubmit(e) {
     btn.disabled = true; spinner.classList.remove("hidden"); text.innerText = "Ejecutando...";
 
     try {
+        let isStagingConfirmed = false;
+        if (execAction !== "TEST_CONN") {
+            const conn = estado.conexiones.find(c => c.id == connId);
+            if (conn) {
+                if (conn.environment_type === 'STAGING') {
+                    if (!window.confirm("ATENCIÓN: Está ejecutando en STAGING. ¿Está seguro de proceder? Las sentencias DML requerirán confirmación.")) {
+                        btn.disabled = false; spinner.classList.add("hidden"); text.innerText = "Proceder";
+                        return;
+                    }
+                    isStagingConfirmed = true;
+                } else if (conn.environment_type === 'PRODUCTION') {
+                    if (!window.confirm("¡PELIGRO! Está ejecutando en PRODUCTION. Todo intento de DML será estrictamente rechazado por el backend. ¿Desea proceder con la ejecución de solo lectura?")) {
+                        btn.disabled = false; spinner.classList.add("hidden"); text.innerText = "Proceder";
+                        return;
+                    }
+                }
+            }
+        }
+
         if (execAction === "TEST_CONN") {
             await fetchAPI(`/connections/${execTargetId}/test`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({password: pwd}) });
             getModalPwdInst().hide();
             Swal.fire("Éxito", "Conexión a base de datos exitosa.", "success");
         } else if (execAction === "CASE") {
-            const res = await fetchAPI(`/execute/test-case/${execTargetId}`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({connection_profile_id: parseInt(connId), password: pwd}) });
+            const res = await fetchAPI(`/execute/test-case/${execTargetId}`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({connection_profile_id: parseInt(connId), password: pwd, confirm_staging_dml: isStagingConfirmed}) });
             getModalPwdInst().hide();
             let cl = res.status === 'PASS' ? 'success' : (res.status === 'FAIL' ? 'warning' : 'error');
             Swal.fire({
@@ -60,7 +79,7 @@ export async function procesarPasswordSubmit(e) {
             });
             actualizarDatosProyectoActivo();
         } else if (execAction === "SUITE") {
-            const res = await fetchAPI(`/execute/suite/${execTargetId}`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({connection_profile_id: parseInt(connId), password: pwd}) });
+            const res = await fetchAPI(`/execute/suite/${execTargetId}`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({connection_profile_id: parseInt(connId), password: pwd, confirm_staging_dml: isStagingConfirmed}) });
             getModalPwdInst().hide();
             const isPass = res.failed === 0 && res.errors === 0;
             let detHtml = '<hr><div class="text-start" style="max-height:200px; overflow-y:auto; font-size:0.85em;">';

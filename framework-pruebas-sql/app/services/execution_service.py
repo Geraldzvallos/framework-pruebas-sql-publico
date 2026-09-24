@@ -73,7 +73,8 @@ def run_single_test_case_execution(
     tc: models_tc.TestCase,
     executor: TargetDatabaseExecutor,
     suite_id: Optional[int] = None,
-    connection_profile_id: Optional[int] = None
+    connection_profile_id: Optional[int] = None,
+    confirm_staging_dml: bool = False
 ) -> models_history.ExecutionHistory:
     """
     Servicio central que ejecuta un caso de prueba contra la BD objetivo,
@@ -82,23 +83,29 @@ def run_single_test_case_execution(
     start_time = time.time()
     status = "ERROR"
     error_msg = None
-    
+
     # 1. Ejecución del SQL contra la BD objetivo
-    res = executor.execute_query(tc.sql_query)
+    res = executor.execute_query(tc.sql_query, confirm_staging_dml=confirm_staging_dml)
     duration_ms = round((time.time() - start_time) * 1000, 2)
-    
+
     stmt_type = res.get("statement_type", "UNKNOWN")
     rowcount = res.get("rowcount", 0)
     rows = res.get("rows", [])
     rollback_applied = res.get("rollback_applied", False)
     rollback_error = res.get("rollback_error")
-    
-    actual_result_str = format_actual_result(rows if stmt_type == "SELECT" else f"Filas afectadas: {rowcount}")
+
+    if getattr(executor, 'environment_type', 'TEST') == "PRODUCTION":
+        actual_result_str = format_actual_result(f"Operación exitosa. {rowcount} filas leídas.") if stmt_type == "SELECT" else format_actual_result(f"Filas afectadas: {rowcount}")
+    else:
+        actual_result_str = format_actual_result(rows if stmt_type == "SELECT" else f"Filas afectadas: {rowcount}")
 
     # 2. Evaluación del resultado
     if not res.get("success", False):
         status = "ERROR"
-        error_msg = res.get("error_message") or res.get("message")
+        err = res.get("error_message") or res.get("message")
+        if getattr(executor, 'environment_type', 'TEST') == "PRODUCTION" and err and "Rechazado" not in err:
+            err = "Error oculto por políticas de seguridad (PRODUCTION)."
+        error_msg = err
     elif stmt_type in {"INSERT", "UPDATE", "DELETE"} and not rollback_applied:
         # Falso rollback en DML produce ERROR
         status = "ERROR"
@@ -110,10 +117,18 @@ def run_single_test_case_execution(
             strategy = ExistenceValidation()
         else:
             strategy = RowCountValidation()
-            
+
         validator = ValidationContext(strategy)
         is_valid = validator.execute_validation(res, tc.expected_result)
         status = "PASS" if is_valid else "FAIL"
+
+    # Sanitización defensiva extra en el nivel de servicio para persistencia
+    env_type = getattr(executor, 'environment_type', 'TEST')
+    if env_type == "PRODUCTION":
+        if error_msg and "Rechazado" not in error_msg:
+            error_msg = "Error oculto por políticas de seguridad (PRODUCTION)."
+        if rollback_error:
+            rollback_error = "Error de rollback oculto por políticas de seguridad (PRODUCTION)."
 
     # 3. Persistir evidencia en ExecutionHistory
     history_record = models_history.ExecutionHistory(
@@ -133,9 +148,9 @@ def run_single_test_case_execution(
         rollback_error=rollback_error,
         error_message=error_msg
     )
-    
+
     db.add(history_record)
     db.commit()
     db.refresh(history_record)
-    
+
     return history_record

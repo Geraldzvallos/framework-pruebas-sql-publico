@@ -18,9 +18,9 @@ router = APIRouter()
 
 @router.post("/execute/raw", response_model=schemas.ExecutionResponse)
 def execute_target_sql(request: schemas.ExecutionRequest, db: Session = Depends(get_db)):
-    """Ejecuta una sentencia SQL aislada sin validación (Prueba de conexión/Sintaxis)."""
+    """Ejecuta una sentencia SQL aislada aplicando las políticas de seguridad del ambiente."""
     try:
-        dsn, user, password, _ = resolve_connection_credentials(
+        dsn, user, password, profile = resolve_connection_credentials(
             db,
             connection_profile_id=request.connection_profile_id,
             dsn=request.dsn,
@@ -30,11 +30,19 @@ def execute_target_sql(request: schemas.ExecutionRequest, db: Session = Depends(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
+    # Siempre tomar del perfil, si no hay perfil (DSN directo) forzar PRODUCTION
+    env_type = getattr(profile.environment_type, "value", profile.environment_type) if profile else "PRODUCTION"
     try:
-        res = executor.execute_query(request.sql_query)
+        executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type=env_type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        res = executor.execute_query(request.sql_query, confirm_staging_dml=request.confirm_staging_dml)
         if not res["success"]:
             detail_msg = res.get("message") or res.get("error_message") or "Error en ejecución SQL."
+            if executor.environment_type == "PRODUCTION" and "Rechazado" not in detail_msg:
+                detail_msg = "Error oculto por políticas de seguridad (PRODUCTION)."
             raise HTTPException(status_code=400, detail=detail_msg)
         return schemas.ExecutionResponse(
             success=res["success"],
@@ -84,15 +92,20 @@ def run_test_case(test_case_id: int, db_credentials: schemas.TestCaseExecutionRe
         raise HTTPException(status_code=400, detail=str(e))
 
     profile_id = profile.id if profile else db_credentials.connection_profile_id
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
-    
+    env_type = getattr(profile.environment_type, "value", profile.environment_type) if profile else "PRODUCTION"
+    try:
+        executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type=env_type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     try:
         history_record = run_single_test_case_execution(
             db=db,
             tc=tc,
             executor=executor,
             suite_id=None,
-            connection_profile_id=profile_id
+            connection_profile_id=profile_id,
+            confirm_staging_dml=db_credentials.confirm_staging_dml
         )
         return history_record
     finally:
@@ -107,7 +120,7 @@ def run_test_suite(suite_id: int, db_credentials: schemas.SuiteExecutionRequest,
     suite = db.query(models_suite.TestSuite).filter(models_suite.TestSuite.id == suite_id).first()
     if not suite:
         raise HTTPException(status_code=404, detail="Suite no encontrada.")
-        
+
     if db_credentials.connection_profile_id:
         profile = db.query(models_conn.ConnectionProfile).filter(models_conn.ConnectionProfile.id == db_credentials.connection_profile_id).first()
         if not profile:
@@ -142,7 +155,11 @@ def run_test_suite(suite_id: int, db_credentials: schemas.SuiteExecutionRequest,
         raise HTTPException(status_code=400, detail=str(e))
 
     profile_id = profile.id if profile else db_credentials.connection_profile_id
-    executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password)
+    env_type = getattr(profile.environment_type, "value", profile.environment_type) if profile else "PRODUCTION"
+    try:
+        executor = TargetDatabaseExecutor(dsn=dsn, user=user, password=password, environment_type=env_type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     try:
         for tc in suite.test_cases:
@@ -151,9 +168,10 @@ def run_test_suite(suite_id: int, db_credentials: schemas.SuiteExecutionRequest,
                 tc=tc,
                 executor=executor,
                 suite_id=suite.id,
-                connection_profile_id=profile_id
+                connection_profile_id=profile_id,
+                confirm_staging_dml=db_credentials.confirm_staging_dml
             )
-            
+
             summary.total_duration_ms += history_record.duration_ms
             if history_record.status == "PASS":
                 summary.passed += 1
@@ -161,7 +179,7 @@ def run_test_suite(suite_id: int, db_credentials: schemas.SuiteExecutionRequest,
                 summary.failed += 1
             else:
                 summary.errors += 1
-                
+
             summary.details.append(history_record)
 
     finally:

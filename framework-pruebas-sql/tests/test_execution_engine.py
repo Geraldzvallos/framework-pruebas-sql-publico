@@ -40,7 +40,7 @@ def test_migration_empty_db():
         # Check alembic_version
         cursor.execute("SELECT version_num FROM alembic_version")
         version = cursor.fetchone()[0]
-        assert version == "002"
+        assert version == "19799b4834ef"
         
         cursor.close()
         conn.close()

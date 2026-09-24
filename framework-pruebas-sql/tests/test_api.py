@@ -98,3 +98,154 @@ def test_list_cases_and_suites_functional():
     suites_res = client.get("/api/suites/")
     assert suites_res.status_code == 200
     assert isinstance(suites_res.json(), list)
+
+def test_execute_raw_production_dml_blocked():
+    """Verifica que un DML enviado a PRODUCTION por /api/execute/raw falle estrictamente."""
+    payload = {
+        "dsn": "localhost/xe",
+        "user": "test_user",
+        "password": "secret_password",
+        "sql_query": "INSERT INTO users(id) VALUES(1)",
+        "environment_type": "PRODUCTION"
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "En producción solo se permiten sentencias SELECT" in response.json()["detail"]
+
+
+@patch("app.api.executions.resolve_connection_credentials")
+def test_execute_raw_staging_dml_requires_confirmation(mock_resolve):
+    """Verifica que un DML en STAGING requiera confirm_staging_dml=True."""
+    from app.models.connection import ConnectionProfile
+    mock_profile = ConnectionProfile(id=99, environment_type="STAGING")
+    mock_resolve.return_value = ("localhost/xe", "user", "pass", mock_profile)
+
+    payload_no_confirm = {
+        "connection_profile_id": 99,
+        "password": "secret_password",
+        "sql_query": "DELETE FROM users"
+    }
+    response_no = client.post("/api/execute/raw", json=payload_no_confirm)
+    assert response_no.status_code == 400
+    assert "requiere confirmación explícita" in response_no.json()["detail"]
+
+    with patch("app.api.executions.TargetDatabaseExecutor.execute_query") as mock_exec:
+        mock_exec.return_value = {
+            "success": True,
+            "statement_type": "DELETE",
+            "rows": [],
+            "rowcount": 5,
+            "message": "OK",
+            "error_message": None,
+            "rollback_applied": True,
+            "rollback_error": None
+        }
+        payload_confirm = {**payload_no_confirm, "confirm_staging_dml": True}
+        response_yes = client.post("/api/execute/raw", json=payload_confirm)
+        assert response_yes.status_code == 200
+        mock_exec.assert_called_once_with("DELETE FROM users", confirm_staging_dml=True)
+
+@patch("app.api.executions.resolve_connection_credentials")
+def test_invalid_environment_returns_400(mock_resolve):
+    """Verifica que un ambiente inválido de BD se rechaza con 400."""
+    from unittest.mock import MagicMock
+    from app.models.connection import ConnectionProfile
+    mock_profile = MagicMock(spec=ConnectionProfile)
+    mock_profile.id = 99
+    mock_profile.environment_type = "INVALID_ENV"
+    mock_resolve.return_value = ("localhost/xe", "user", "pass", mock_profile)
+
+    payload = {
+        "connection_profile_id": 99,
+        "password": "secret_password",
+        "sql_query": "SELECT 1 FROM dual"
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "Ambiente de ejecución inválido" in response.json()["detail"]
+
+def test_execute_raw_production_for_update_blocked():
+    """Verifica que SELECT ... FOR UPDATE sea bloqueado en PRODUCTION."""
+    payload = {
+        "dsn": "localhost/xe",
+        "user": "test_user",
+        "password": "secret_password",
+        "sql_query": "SELECT * FROM users FOR UPDATE",
+        "environment_type": "PRODUCTION"
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "FOR UPDATE están bloqueadas en Producción" in response.json()["detail"]
+
+def test_execute_raw_direct_dsn_default_to_production():
+    """Verifica que si se omite environment_type en conexión directa, se asume PRODUCTION."""
+    payload = {
+        "dsn": "localhost/xe",
+        "user": "test_user",
+        "password": "secret_password",
+        "sql_query": "DELETE FROM users"
+        # Sin environment_type explícito
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "En producción solo se permiten sentencias SELECT" in response.json()["detail"]
+
+def test_execute_raw_direct_dsn_with_test_env_blocked():
+    """Verifica que un DSN directo con environment_type=TEST sea ignorado y forzado a PRODUCTION."""
+    payload = {
+        "dsn": "localhost/xe",
+        "user": "test_user",
+        "password": "secret_password",
+        "sql_query": "DELETE FROM users",
+        "environment_type": "TEST" # Cliente intenta evadir
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "En producción solo se permiten sentencias SELECT" in response.json()["detail"]
+
+@patch("app.api.executions.resolve_connection_credentials")
+def test_execute_raw_production_profile_with_test_env_blocked(mock_resolve):
+    """Verifica que si el perfil es PRODUCTION, se ignora el environment_type=TEST enviado."""
+    from app.models.connection import ConnectionProfile
+    mock_profile = ConnectionProfile(id=99, environment_type="PRODUCTION")
+    mock_resolve.return_value = ("localhost/xe", "user", "pass", mock_profile)
+
+    payload = {
+        "connection_profile_id": 99,
+        "password": "secret_password",
+        "sql_query": "INSERT INTO users(id) VALUES(1)",
+        "environment_type": "TEST" # Cliente intenta evadir
+    }
+    response = client.post("/api/execute/raw", json=payload)
+    assert response.status_code == 400
+    assert "En producción solo se permiten sentencias SELECT" in response.json()["detail"]
+
+@patch("oracledb.connect")
+def test_connection_test_invalid_environment_returns_400(mock_connect):
+    """Verifica que un test de conexión con un ambiente inválido se rechace con 400 y sin conectar."""
+    # 1. Crear proyecto
+    proj_res = client.post("/api/projects/", json={"name": "Temp Project", "description": ""})
+    assert proj_res.status_code == 201
+    proj_id = proj_res.json()["id"]
+
+    from app.core.database import get_db
+    from app.main import app
+    db_gen = app.dependency_overrides[get_db]()
+    db = next(db_gen)
+
+    from app.models.connection import ConnectionProfile
+    invalid_profile = ConnectionProfile(
+        project_id=proj_id, name="Invalid", host="localhost", port=1521,
+        service_name="xe", username="u", environment_type="INVALID_DB"
+    )
+    db.add(invalid_profile)
+    db.commit()
+    db.refresh(invalid_profile)
+    prof_id = invalid_profile.id
+    db.close()
+
+    # 3. Testear conexión
+    response = client.post(f"/api/connections/{prof_id}/test", json={"password": "pwd"})
+    assert response.status_code == 400
+    assert "Ambiente de ejecución inválido" in response.json()["detail"]
+    mock_connect.assert_not_called()

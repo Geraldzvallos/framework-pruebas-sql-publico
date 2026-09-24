@@ -16,10 +16,14 @@ El proyecto es el contenedor lógico de nivel superior. Todas las conexiones, ca
 - Haga clic en **Nuevo** y proporcione un nombre descriptivo.
 - Seleccione su nuevo proyecto en el **selector desplegable (Proyecto Activo)** en la barra superior.
 
-### 2. Perfiles de Conexión
+### 2. Perfiles de Conexión y Ambientes
 Para ejecutar pruebas contra una base de datos Oracle, es necesario definir a dónde conectarse.
 - Acceda a **Conexiones Oracle**.
 - Cree un nuevo perfil indicando el Host, Puerto, Service Name y el Usuario.
+- **Ambiente de Base de Datos**: Seleccione estrictamente el tipo de ambiente:
+  - `TEST`: Permite operaciones DML con rollback obligatorio automático.
+  - `STAGING`: Permite DML solo con confirmación explícita del backend y rollback obligatorio automático.
+  - `PRODUCTION`: Bloquea estrictamente cualquier intento de DML por el backend y ofusca las filas devueltas (solo conteo visible). Solo permite sentencias de lectura (`SELECT`) y requiere un usuario Oracle exclusivo con permisos SELECT.
 - **Nota de Seguridad**: Las contraseñas no se guardan en el sistema. Se le solicitarán únicamente en el momento de ejecutar la prueba.
 
 ### 3. Creación de Casos de Prueba

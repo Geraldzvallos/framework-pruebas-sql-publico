@@ -8,6 +8,11 @@ class ValidationTypeEnum(str, Enum):
     ROW_COUNT = "ROW_COUNT"
     EXISTS = "EXISTS"
 
+class EnvironmentTypeEnum(str, Enum):
+    TEST = "TEST"
+    STAGING = "STAGING"
+    PRODUCTION = "PRODUCTION"
+
 
 # --- ESQUEMAS DE PROYECTOS ---
 
@@ -53,6 +58,7 @@ class ConnectionProfileCreate(BaseModel):
     port: int = Field(1521, ge=1, le=65535)
     service_name: str = Field(..., min_length=1, max_length=100)
     username: str = Field(..., min_length=1, max_length=100)
+    environment_type: EnvironmentTypeEnum = EnvironmentTypeEnum.TEST
 
     @field_validator('name', 'host', 'service_name', 'username')
     @classmethod
@@ -76,6 +82,7 @@ class ConnectionProfileUpdate(BaseModel):
     port: Optional[int] = Field(None, ge=1, le=65535)
     service_name: Optional[str] = Field(None, min_length=1, max_length=100)
     username: Optional[str] = Field(None, min_length=1, max_length=100)
+    environment_type: Optional[EnvironmentTypeEnum] = None
 
     @field_validator('name', 'host', 'service_name', 'username')
     @classmethod
@@ -95,6 +102,7 @@ class ConnectionProfileResponse(BaseModel):
     port: int
     service_name: str
     username: str
+    environment_type: str
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -127,7 +135,7 @@ class TestCaseCreate(BaseModel):
         raw_val_type = info.data.get('validation_type', ValidationTypeEnum.ROW_COUNT)
         val_type_str = str(getattr(raw_val_type, 'value', raw_val_type)).upper()
         clean_v = v.strip()
-        
+
         if val_type_str == "ROW_COUNT":
             try:
                 val = int(clean_v)
@@ -206,6 +214,8 @@ class DBCredentials(BaseModel):
     user: Optional[str] = None
     password: str
     connection_profile_id: Optional[int] = None
+    environment_type: EnvironmentTypeEnum = EnvironmentTypeEnum.PRODUCTION
+    confirm_staging_dml: bool = False
 
 class ExecutionRequest(DBCredentials):
     sql_query: str
