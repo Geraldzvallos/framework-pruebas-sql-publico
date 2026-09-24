@@ -18,7 +18,7 @@ El **Framework de Pruebas de Base de Datos SQL** es un entorno diseñado para ev
 
 | Requisito | Módulo | Endpoint/Función | Prueba | Estado |
 |---|---|---|---|---|
-| Autenticación Global | Seguridad (`api.js`) | Middleware (FastAPI) | `tests/test_auth.py` | Implementado |
+| Autenticación Global | Seguridad (`api.js`) | Middleware (Cookie HttpOnly) | `tests/test_auth.py` | Implementado |
 | CRUD Proyectos | Proyectos (`proyectos.js`) | `/api/projects/` | `tests/test_core_models.py` | Implementado |
 | CRUD Conexiones | Conexiones (`conexiones.js`) | `/api/connections/` | `tests/test_core_models.py` | Implementado |
 | Probar Conexión | Conexiones (`conexiones.js`) | `/api/connections/{id}/test` | `tests/test_engine.py` | Implementado |
