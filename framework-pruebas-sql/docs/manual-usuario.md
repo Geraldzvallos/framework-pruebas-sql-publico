@@ -4,7 +4,13 @@ Bienvenido al **Framework de Pruebas de Base de Datos SQL**. Este sistema le per
 
 ## Primeros Pasos
 
-### 1. Gestión de Proyectos
+### 1. Acceso al Sistema
+Si la seguridad está habilitada, al ingresar al sistema se le presentará una **Pantalla de Acceso**.
+- Ingrese el **Usuario** y la **Contraseña** proporcionados por su administrador.
+- El sistema utiliza una sesión segura (Cookie HttpOnly) para mantener su acceso durante 24 horas.
+- Para salir del sistema y revocar su acceso de manera segura, utilice el botón **Salir** ubicado en la parte superior derecha de la interfaz principal.
+
+### 2. Gestión de Proyectos
 El proyecto es el contenedor lógico de nivel superior. Todas las conexiones, casos y suites pertenecen a un proyecto.
 - En la barra lateral, acceda a **Proyectos**.
 - Haga clic en **Nuevo** y proporcione un nombre descriptivo.

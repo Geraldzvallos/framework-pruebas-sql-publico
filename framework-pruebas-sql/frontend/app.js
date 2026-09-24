@@ -66,6 +66,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("modalPasswordForm").addEventListener("submit", procesarPasswordSubmit);
     document.getElementById("modalGeneralForm").addEventListener("submit", procesarModalGeneralSubmit);
 
+    document.getElementById("btn-logout").addEventListener("click", async () => {
+        try {
+            await fetchAPI("/logout", { method: 'POST' });
+        } catch(e) {}
+        window.location.href = '/login';
+    });
+
     await cargarProyectosGlobal();
     mostrarSeccion("dashboard");
 });

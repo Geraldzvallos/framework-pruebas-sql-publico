@@ -14,6 +14,10 @@ export function handleAPIError(e) {
 export async function fetchAPI(endpoint, options = {}) {
     const res = await fetch(API_URL + endpoint, options);
     if (!res.ok) {
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
         let errorMsg = 'Error en el servidor';
         try { const errorData = await res.json(); errorMsg = errorData.detail || errorMsg; } catch (e) {}
         throw { status: res.status, message: errorMsg };
