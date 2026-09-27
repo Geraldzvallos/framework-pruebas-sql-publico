@@ -313,9 +313,12 @@ def test_19_confirm_tests_do_not_modify_framework_db():
 
 def test_20_app_startup_and_docs_available():
     """20. Arranque de la aplicación y disponibilidad de /, /docs y /openapi.json."""
-    res_root = client.get("/")
-    assert res_root.status_code == 200
-    assert res_root.json()["version"] == "2.0.0"
+    res_root = client.get("/", follow_redirects=False)
+    assert res_root.status_code in [302, 303, 307]
+
+    res_health = client.get("/health")
+    assert res_health.status_code == 200
+    assert res_health.json()["version"] == "2.0.0"
 
     res_docs = client.get("/docs")
     assert res_docs.status_code == 200

@@ -1,5 +1,21 @@
 name: framework_pruebas_sql
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: framework_caddy_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_DOMAIN=${APP_DOMAIN:-localhost}
+    command: caddy reverse-proxy --from ${APP_DOMAIN:-localhost} --to api:8000
+    networks:
+      - framework_net
+    depends_on:
+      api:
+        condition: service_healthy
+
   api:
     image: sql-qa-framework:latest
     build:
@@ -7,9 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: framework_api_prod
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:${API_PORT:-8000}:8000"
     environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
       - FRAMEWORK_DB_URL=sqlite:////data/framework_interno.db
       - API_HOST=0.0.0.0
       - API_PORT=8000
@@ -17,13 +32,16 @@ services:
       - APP_ACCESS_ENABLED=${APP_ACCESS_ENABLED:-true}
       - APP_ACCESS_USERNAME=${APP_ACCESS_USERNAME:?APP_ACCESS_USERNAME must be set}
       - APP_ACCESS_PASSWORD=${APP_ACCESS_PASSWORD:?APP_ACCESS_PASSWORD must be set}
+      - APP_SESSION_SECRET=${APP_SESSION_SECRET:?APP_SESSION_SECRET must be set}
+      - MAX_RESULT_ROWS=${MAX_RESULT_ROWS:-1000}
+      - ORACLE_CALL_TIMEOUT_MS=${ORACLE_CALL_TIMEOUT_MS:-10000}
       - RUN_ORACLE_TESTS=${RUN_ORACLE_TESTS:-0}
     volumes:
       - framework_data:/data
     networks:
       - framework_net
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -33,8 +51,6 @@ services:
     image: container-registry.oracle.com/database/free@sha256:f988b0c04c4c386cd306a2a914c0d7a9702d83acc31b064a28ad8eb6278a8fba
     container_name: framework_oracle_prod
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:1521:1521"
     environment:
       - ORACLE_PWD=${ORACLE_PWD:?ORACLE_PWD must be set}
       - FRAMEWORK_TEST_PASSWORD=${FRAMEWORK_TEST_PASSWORD:?FRAMEWORK_TEST_PASSWORD must be set}

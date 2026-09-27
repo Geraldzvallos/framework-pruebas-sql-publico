@@ -27,6 +27,7 @@ framework_interno.db
 
 # Archivos empaquetados y llaves
 *.zip
+dist/
 *.pem
 *.key
 

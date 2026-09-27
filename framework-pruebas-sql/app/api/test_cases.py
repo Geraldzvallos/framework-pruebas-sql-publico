@@ -4,6 +4,7 @@ Endpoints REST para la gestión de Casos de Prueba SQL.
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.models import test_case as models_tc
 from app.models import project as models_project
@@ -96,6 +97,10 @@ def delete_test_case(test_case_id: int, db: Session = Depends(get_db)):
     if not db_tc:
         raise HTTPException(status_code=404, detail="Caso de prueba no encontrado.")
     
-    db.delete(db_tc)
-    db.commit()
+    try:
+        db.delete(db_tc)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="No se puede eliminar el caso de prueba porque está referenciado en el historial u otras tablas.")
     return

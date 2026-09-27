@@ -144,6 +144,6 @@ frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.exists(frontend_path):
     app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def read_root():
-    return {"status": "ok", "message": "El motor del Framework SQL está en línea.", "version": "2.0.0"}
+    return RedirectResponse(url="/ui/")

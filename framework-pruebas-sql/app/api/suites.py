@@ -4,6 +4,7 @@ Endpoints REST para las Suites de Pruebas.
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.models import suite as models_suite
 from app.models import test_case as models_tc
@@ -92,8 +93,12 @@ def delete_suite(suite_id: int, db: Session = Depends(get_db)):
     db_suite = db.query(models_suite.TestSuite).filter(models_suite.TestSuite.id == suite_id).first()
     if not db_suite:
         raise HTTPException(status_code=404, detail="Suite de prueba no encontrada.")
-    db.delete(db_suite)
-    db.commit()
+    try:
+        db.delete(db_suite)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="No se puede eliminar la suite porque está referenciada en el historial u otras tablas.")
     return
 
 @router.put("/suites/{suite_id}", response_model=schemas.TestSuiteResponse)

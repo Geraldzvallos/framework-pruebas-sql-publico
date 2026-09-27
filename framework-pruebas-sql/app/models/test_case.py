@@ -1,8 +1,9 @@
 """
 Modelo de base de datos para Casos de Prueba SQL.
 """
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.core.database import Base
 
 class TestCase(Base):
@@ -15,6 +16,8 @@ class TestCase(Base):
     sql_query = Column(Text, nullable=False)
     expected_result = Column(String, nullable=False)
     validation_type = Column(String, nullable=False, default="ROW_COUNT")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     project = relationship("Project", back_populates="test_cases")
     execution_histories = relationship("ExecutionHistory", back_populates="test_case")

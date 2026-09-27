@@ -5,6 +5,7 @@ import oracledb
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.models import connection as models_conn
 from app.models import project as models_project
@@ -70,8 +71,12 @@ def delete_connection_profile(connection_id: int, db: Session = Depends(get_db))
     if not profile:
         raise HTTPException(status_code=404, detail="Perfil de conexión no encontrado.")
 
-    db.delete(profile)
-    db.commit()
+    try:
+        db.delete(profile)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="No se puede eliminar la conexión porque está referenciada en el historial u otras tablas.")
     return
 
 @router.post("/connections/{connection_id}/test", response_model=schemas.ExecutionResponse)
