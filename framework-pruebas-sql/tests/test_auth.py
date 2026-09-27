@@ -66,9 +66,8 @@ def test_logout():
 
 def test_healthcheck_always_available():
     client = TestClient(app)
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok", "message": "El motor del Framework SQL está en línea.", "version": "2.0.0"}
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code in [302, 303, 307]
 
     response = client.get("/health")
     assert response.status_code == 200
@@ -95,7 +94,7 @@ def test_auth_enabled_empty_password(monkeypatch):
 def test_healthcheck_invalid_config(monkeypatch):
     monkeypatch.setenv("APP_ACCESS_PASSWORD", "   ")
     client = TestClient(app)
-    response = client.get("/")
+    response = client.get("/health")
     assert response.status_code == 503
 
 def test_missing_session_secret(monkeypatch):

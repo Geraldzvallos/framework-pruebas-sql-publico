@@ -2,8 +2,9 @@
 Modelo de base de datos para las Suites de Pruebas.
 Permite agrupar múltiples Casos de Prueba para su ejecución en bloque.
 """
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.core.database import Base
 
 suite_test_case_table = Table(
@@ -20,6 +21,8 @@ class TestSuite(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, default=1)
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     project = relationship("Project", back_populates="test_suites")
     test_cases = relationship("TestCase", secondary=suite_test_case_table, backref="suites")
