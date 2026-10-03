@@ -1,17 +1,30 @@
-name: Deploy to Production
+name: Security Scan and Deploy
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  security-scan:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./framework-pruebas-sql
     steps:
-    - name: Blocked Deploy Notice
-      run: |
-        echo "DEPLOYMENT BLOCKED: Requiere configuración de servidor, dominio y secretos."
-        echo "Una vez proporcionados, habilitar SSH o el mecanismo correspondiente aquí."
-        exit 1
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Bandit (SAST Tool)
+        run: pip install bandit
+
+      - name: Run Security Scan
+        run: bandit -r ./framework-pruebas-sql -f json -o bandit-report.json || true
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: sast-report
+          path: bandit-report.json
